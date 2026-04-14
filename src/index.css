@@ -1,0 +1,74 @@
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=Manrope:wght@300;400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 200 25% 10%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 200 25% 10%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 200 25% 10%;
+
+    --primary: 189 100% 23%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 191 44% 40%;
+    --secondary-foreground: 0 0% 100%;
+
+    --accent: 43 73% 47%;
+    --accent-foreground: 0 0% 100%;
+
+    --muted: 195 20% 95%;
+    --muted-foreground: 200 10% 45%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 195 20% 90%;
+    --input: 195 20% 90%;
+    --ring: 189 100% 23%;
+
+    --radius: 0.625rem;
+
+    --sidebar-background: 195 30% 97%;
+    --sidebar-foreground: 200 25% 10%;
+    --sidebar-primary: 189 100% 23%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 195 25% 93%;
+    --sidebar-accent-foreground: 200 25% 10%;
+    --sidebar-border: 195 20% 90%;
+    --sidebar-ring: 189 100% 23%;
+
+    --font-heading: 'Sora', sans-serif;
+    --font-body: 'Manrope', sans-serif;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-body antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+  }
+}
+
+@layer utilities {
+  .font-heading {
+    font-family: var(--font-heading);
+  }
+  .font-body {
+    font-family: var(--font-body);
+  }
+}
