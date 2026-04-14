@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,12 +13,12 @@ import * as XLSX from "xlsx";
 interface StudentRow {
   email: string;
   password: string;
+  full_name?: string;
 }
 
 interface StudentRecord {
-  email: string;
   user_id: string;
-  created_at: string;
+  full_name: string;
 }
 
 export default function AdminStudents() {
@@ -28,39 +28,44 @@ export default function AdminStudents() {
   const [uploading, setUploading] = useState(false);
   const [results, setResults] = useState<{ email: string; status: string }[]>([]);
 
-  // Manual add state
   const [addOpen, setAddOpen] = useState(false);
-  const [manualForm, setManualForm] = useState({ email: "", password: "" });
+  const [manualForm, setManualForm] = useState({ email: "", password: "", full_name: "" });
   const [addingManual, setAddingManual] = useState(false);
 
-  // Students list
   const [students, setStudents] = useState<StudentRecord[]>([]);
   const [loadingStudents, setLoadingStudents] = useState(false);
 
   const fetchStudents = async () => {
     setLoadingStudents(true);
-    const { data } = await supabase
+    const { data: roles } = await supabase
       .from("user_roles")
       .select("user_id")
       .eq("role", "student");
 
-    if (data && data.length > 0) {
-      // We don't have a profiles table, so just show user_ids with roles
-      setStudents(data.map((d) => ({
-        email: "",
-        user_id: d.user_id,
-        created_at: "",
-      })));
+    if (roles && roles.length > 0) {
+      const userIds = roles.map((r) => r.user_id);
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("user_id, full_name")
+        .in("user_id", userIds);
+
+      const profileMap = new Map((profiles || []).map((p) => [p.user_id, p.full_name]));
+
+      setStudents(
+        userIds.map((uid) => ({
+          user_id: uid,
+          full_name: profileMap.get(uid) || uid.slice(0, 8) + "...",
+        }))
+      );
     } else {
       setStudents([]);
     }
     setLoadingStudents(false);
   };
 
-  // Fetch students on mount
-  useState(() => {
+  useEffect(() => {
     fetchStudents();
-  });
+  }, []);
 
   const handleManualAdd = async () => {
     if (!manualForm.email.trim()) {
@@ -75,13 +80,17 @@ export default function AdminStudents() {
     setAddingManual(true);
     try {
       const { data, error } = await supabase.functions.invoke("create-student", {
-        body: { email: manualForm.email.trim(), password: manualForm.password.trim() },
+        body: {
+          email: manualForm.email.trim(),
+          password: manualForm.password.trim(),
+          full_name: manualForm.full_name.trim() || undefined,
+        },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
 
       toast({ title: "تم إنشاء حساب الطالب بنجاح" });
-      setManualForm({ email: "", password: "" });
+      setManualForm({ email: "", password: "", full_name: "" });
       setAddOpen(false);
       fetchStudents();
     } catch (err: any) {
@@ -102,7 +111,11 @@ export default function AdminStudents() {
 
     const studentsData: StudentRow[] = rows
       .filter((r) => r.email && r.password)
-      .map((r) => ({ email: String(r.email).trim(), password: String(r.password).trim() }));
+      .map((r) => ({
+        email: String(r.email).trim(),
+        password: String(r.password).trim(),
+        full_name: r.full_name ? String(r.full_name).trim() : r.name ? String(r.name).trim() : undefined,
+      }));
 
     if (studentsData.length === 0) {
       toast({ title: "خطأ", description: "الملف لا يحتوي على أعمدة email و password", variant: "destructive" });
@@ -119,7 +132,7 @@ export default function AdminStudents() {
     for (const s of parsed) {
       try {
         const { data, error } = await supabase.functions.invoke("create-student", {
-          body: { email: s.email, password: s.password },
+          body: { email: s.email, password: s.password, full_name: s.full_name },
         });
         if (error) throw error;
         if (data?.error) throw new Error(data.error);
@@ -160,6 +173,15 @@ export default function AdminStudents() {
             </DialogHeader>
             <div className="space-y-4">
               <div>
+                <Label>اسم الطالب</Label>
+                <Input
+                  type="text"
+                  placeholder="الاسم الكامل"
+                  value={manualForm.full_name}
+                  onChange={(e) => setManualForm({ ...manualForm, full_name: e.target.value })}
+                />
+              </div>
+              <div>
                 <Label>البريد الإلكتروني</Label>
                 <Input
                   type="email"
@@ -188,23 +210,17 @@ export default function AdminStudents() {
         </Dialog>
       </div>
 
-      {/* Bulk upload section */}
+      {/* Bulk upload */}
       <Card className="mb-6">
         <CardHeader>
           <CardTitle className="text-lg">رفع ملف الطلاب (CSV/XLSX)</CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground mb-4">
-            يجب أن يحتوي الملف على عمودين: <strong>email</strong> و <strong>password</strong>
+            يجب أن يحتوي الملف على أعمدة: <strong>email</strong> و <strong>password</strong> و <strong>full_name</strong> (اختياري)
           </p>
           <div className="flex gap-3">
-            <input
-              ref={fileRef}
-              type="file"
-              accept=".csv,.xlsx,.xls"
-              onChange={handleFile}
-              className="hidden"
-            />
+            <input ref={fileRef} type="file" accept=".csv,.xlsx,.xls" onChange={handleFile} className="hidden" />
             <Button variant="outline" onClick={() => fileRef.current?.click()}>
               <Upload className="w-4 h-4 ml-2" />اختيار ملف
             </Button>
@@ -218,25 +234,25 @@ export default function AdminStudents() {
         </CardContent>
       </Card>
 
-      {/* Bulk upload results */}
+      {/* Results */}
       {(parsed.length > 0 || results.length > 0) && (
         <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="text-lg">نتائج الرفع</CardTitle>
-          </CardHeader>
+          <CardHeader><CardTitle className="text-lg">نتائج الرفع</CardTitle></CardHeader>
           <CardContent className="p-0">
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="text-right">الاسم</TableHead>
                   <TableHead className="text-right">البريد الإلكتروني</TableHead>
                   <TableHead className="text-right">الحالة</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {(results.length > 0 ? results : parsed).map((row, i) => (
+                {(results.length > 0 ? results.map((r, i) => ({ ...r, full_name: parsed[i]?.full_name || "" })) : parsed).map((row, i) => (
                   <TableRow key={i}>
+                    <TableCell>{row.full_name || "—"}</TableCell>
                     <TableCell>{row.email}</TableCell>
-                    <TableCell>{"status" in row ? row.status : "جاهز"}</TableCell>
+                    <TableCell>{"status" in row ? (row as any).status : "جاهز"}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -247,21 +263,19 @@ export default function AdminStudents() {
 
       {/* Students list */}
       <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">قائمة الطلاب المسجلين</CardTitle>
-        </CardHeader>
+        <CardHeader><CardTitle className="text-lg">قائمة الطلاب المسجلين</CardTitle></CardHeader>
         <CardContent className="p-0">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="text-right">معرّف الطالب</TableHead>
+                <TableHead className="text-right">اسم الطالب</TableHead>
                 <TableHead className="text-right">إجراءات</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {students.map((s) => (
                 <TableRow key={s.user_id}>
-                  <TableCell className="font-mono text-sm">{s.user_id}</TableCell>
+                  <TableCell className="font-medium">{s.full_name}</TableCell>
                   <TableCell>
                     <Button size="sm" variant="destructive" onClick={() => handleDeleteStudent(s.user_id)}>
                       <Trash2 className="w-4 h-4" />

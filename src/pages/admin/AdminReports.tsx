@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 interface ProgressRow {
   student_id: string;
+  student_name: string;
   lecture_title: string;
   watched_seconds: number;
   completion_percentage: number;
@@ -29,9 +30,18 @@ export default function AdminReports() {
 
       const lectureMap = new Map((lecs || []).map((l) => [l.id, l.title]));
 
+      // Get student names
+      const studentIds = [...new Set((progress || []).map((p) => p.student_id))];
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("user_id, full_name")
+        .in("user_id", studentIds);
+      const nameMap = new Map((profiles || []).map((p) => [p.user_id, p.full_name]));
+
       setRows(
         (progress || []).map((p) => ({
           student_id: p.student_id,
+          student_name: nameMap.get(p.student_id) || p.student_id.slice(0, 8) + "...",
           lecture_title: lectureMap.get(p.lecture_id) || "غير معروف",
           watched_seconds: p.watched_seconds || 0,
           completion_percentage: p.completion_percentage || 0,
@@ -78,7 +88,7 @@ export default function AdminReports() {
             <TableBody>
               {filtered.map((r, i) => (
                 <TableRow key={i}>
-                  <TableCell className="font-mono text-xs">{r.student_id.slice(0, 8)}...</TableCell>
+                  <TableCell className="font-medium">{r.student_name}</TableCell>
                   <TableCell>{r.lecture_title}</TableCell>
                   <TableCell>{Math.round(r.watched_seconds / 60)} دقيقة</TableCell>
                   <TableCell>

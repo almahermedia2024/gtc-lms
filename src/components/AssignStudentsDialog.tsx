@@ -13,7 +13,7 @@ interface Props {
 
 interface StudentItem {
   user_id: string;
-  email: string;
+  full_name: string;
   assigned: boolean;
 }
 
@@ -25,23 +25,25 @@ export function AssignStudentsDialog({ lectureId, onClose }: Props) {
 
   useEffect(() => {
     const fetch = async () => {
-      // Get all students
       const { data: roles } = await supabase.from("user_roles").select("user_id").eq("role", "student");
       const studentIds = (roles || []).map((r) => r.user_id);
 
-      // Get current assignments for this lecture
       const { data: assignments } = await supabase
         .from("student_lectures")
         .select("student_id")
         .eq("lecture_id", lectureId);
       const assignedIds = new Set((assignments || []).map((a) => a.student_id));
 
-      // We don't have profiles table, so we'll show user_id as identifier
-      // In real app you'd join with profiles
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("user_id, full_name")
+        .in("user_id", studentIds);
+      const profileMap = new Map((profiles || []).map((p) => [p.user_id, p.full_name]));
+
       setStudents(
         studentIds.map((uid) => ({
           user_id: uid,
-          email: uid.slice(0, 8) + "...",
+          full_name: profileMap.get(uid) || uid.slice(0, 8) + "...",
           assigned: assignedIds.has(uid),
         }))
       );
@@ -58,10 +60,8 @@ export function AssignStudentsDialog({ lectureId, onClose }: Props) {
 
   const save = async () => {
     setSaving(true);
-    // Remove all current assignments
     await supabase.from("student_lectures").delete().eq("lecture_id", lectureId);
 
-    // Insert new assignments
     const toAssign = students.filter((s) => s.assigned);
     if (toAssign.length > 0) {
       const { error } = await supabase.from("student_lectures").insert(
@@ -93,7 +93,7 @@ export function AssignStudentsDialog({ lectureId, onClose }: Props) {
             {students.map((s) => (
               <label key={s.user_id} className="flex items-center gap-3 p-2 rounded-md hover:bg-muted cursor-pointer">
                 <Checkbox checked={s.assigned} onCheckedChange={() => toggle(s.user_id)} />
-                <span className="text-sm">{s.email}</span>
+                <span className="text-sm font-medium">{s.full_name}</span>
               </label>
             ))}
             <Button onClick={save} className="w-full" disabled={saving}>
