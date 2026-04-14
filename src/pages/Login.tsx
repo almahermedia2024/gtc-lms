@@ -94,11 +94,28 @@ export default function Login() {
   return (
     <div className="min-h-screen flex items-center justify-center px-4 animated-bg" dir="rtl">
       {/* Background Logo */}
-      <div className="fixed inset-0 flex items-center justify-center pointer-events-none z-0">
+      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
         <img
           src={logo}
           alt=""
-          className="w-[700px] h-[700px] object-contain opacity-[0.25]"
+          className="absolute top-[10%] left-[10%] w-[300px] h-[300px] object-contain opacity-[0.12] animate-float-slow"
+        />
+        <img
+          src={logo}
+          alt=""
+          className="absolute top-[50%] right-[5%] w-[400px] h-[400px] object-contain opacity-[0.08] animate-float-slow-reverse"
+        />
+        <img
+          src={logo}
+          alt=""
+          className="absolute bottom-[5%] left-[30%] w-[250px] h-[250px] object-contain opacity-[0.1] animate-float-slow"
+          style={{ animationDelay: '3s' }}
+        />
+        <img
+          src={logo}
+          alt=""
+          className="absolute top-[5%] right-[30%] w-[200px] h-[200px] object-contain opacity-[0.06] animate-float-slow-reverse"
+          style={{ animationDelay: '5s' }}
         />
       </div>
 
