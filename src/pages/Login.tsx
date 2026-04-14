@@ -98,8 +98,7 @@ export default function Login() {
         <img
           src={logo}
           alt=""
-          className="w-[500px] h-[500px] object-contain opacity-[0.07] blur-[2px] animate-pulse"
-          style={{ animationDuration: '6s' }}
+          className="w-[700px] h-[700px] object-contain opacity-[0.15]"
         />
       </div>
 
