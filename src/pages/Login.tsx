@@ -98,7 +98,7 @@ export default function Login() {
         <img
           src={logo}
           alt=""
-          className="w-[700px] h-[700px] object-contain opacity-[0.15]"
+          className="w-[700px] h-[700px] object-contain opacity-[0.25]"
         />
       </div>
 
