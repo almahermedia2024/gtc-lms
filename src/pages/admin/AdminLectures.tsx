@@ -37,7 +37,14 @@ export default function AdminLectures() {
   useEffect(() => { fetchLectures(); }, []);
 
   const handleAdd = async () => {
-    if (!form.title || !form.video_url) return;
+    if (!form.title.trim()) {
+      toast({ title: "خطأ", description: "يرجى إدخال عنوان المحاضرة", variant: "destructive" });
+      return;
+    }
+    if (!form.video_url.trim()) {
+      toast({ title: "خطأ", description: "يرجى إدخال رابط الفيديو", variant: "destructive" });
+      return;
+    }
     const { error } = await supabase.from("lectures").insert({
       title: form.title,
       description: form.description || null,
