@@ -93,6 +93,16 @@ export default function Login() {
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 animated-bg" dir="rtl">
+      {/* Background Logo */}
+      <div className="fixed inset-0 flex items-center justify-center pointer-events-none z-0">
+        <img
+          src={logo}
+          alt=""
+          className="w-[500px] h-[500px] object-contain opacity-[0.07] blur-[2px] animate-pulse"
+          style={{ animationDuration: '6s' }}
+        />
+      </div>
+
       {/* Blobs */}
       <div className="blob blob-1" />
       <div className="blob blob-2" />
