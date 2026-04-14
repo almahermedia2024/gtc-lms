@@ -38,30 +38,56 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const checkActive = useCallback(async (userId: string): Promise<boolean> => {
+    const { data } = await supabase
+      .from("profiles")
+      .select("is_active")
+      .eq("user_id", userId)
+      .maybeSingle();
+    // If no profile found, allow access (admin might not have profile)
+    if (!data) return true;
+    return data.is_active !== false;
+  }, []);
+
   useEffect(() => {
     let mounted = true;
 
-    // First get the current session
     supabase.auth.getSession().then(async ({ data: { session: sess } }) => {
       if (!mounted) return;
       setSession(sess);
       setUser(sess?.user ?? null);
       if (sess?.user) {
+        const active = await checkActive(sess.user.id);
+        if (!active) {
+          await supabase.auth.signOut();
+          setUser(null);
+          setSession(null);
+          setRole(null);
+          if (mounted) setLoading(false);
+          return;
+        }
         await fetchRole(sess.user.id);
       }
       if (mounted) setLoading(false);
     });
 
-    // Then listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, sess) => {
         if (!mounted) return;
         setSession(sess);
         setUser(sess?.user ?? null);
         if (sess?.user) {
-          // Use setTimeout to avoid potential deadlock with supabase-js internals
           setTimeout(async () => {
             if (!mounted) return;
+            const active = await checkActive(sess.user.id);
+            if (!active) {
+              await supabase.auth.signOut();
+              setUser(null);
+              setSession(null);
+              setRole(null);
+              if (mounted) setLoading(false);
+              return;
+            }
             await fetchRole(sess.user.id);
             if (mounted) setLoading(false);
           }, 0);
@@ -76,14 +102,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, [fetchRole]);
+  }, [fetchRole, checkActive]);
 
   const signIn = async (email: string, password: string) => {
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       setLoading(false);
       throw error;
+    }
+    // Check if student is disabled
+    if (data.user) {
+      const active = await checkActive(data.user.id);
+      if (!active) {
+        await supabase.auth.signOut();
+        setUser(null);
+        setSession(null);
+        setRole(null);
+        setLoading(false);
+        throw new Error("تم تعطيل حسابك. تواصل مع الإدارة.");
+      }
     }
   };
 

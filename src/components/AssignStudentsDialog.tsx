@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2 } from "lucide-react";
+import { Loader2, Users } from "lucide-react";
 
 interface Props {
   lectureId: string;
@@ -36,16 +36,18 @@ export function AssignStudentsDialog({ lectureId, onClose }: Props) {
 
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("user_id, full_name")
+        .select("user_id, full_name, is_active")
         .in("user_id", studentIds);
-      const profileMap = new Map((profiles || []).map((p) => [p.user_id, p.full_name]));
+      const profileMap = new Map((profiles || []).map((p) => [p.user_id, p]));
 
       setStudents(
-        studentIds.map((uid) => ({
-          user_id: uid,
-          full_name: profileMap.get(uid) || uid.slice(0, 8) + "...",
-          assigned: assignedIds.has(uid),
-        }))
+        studentIds
+          .filter((uid) => profileMap.get(uid)?.is_active !== false)
+          .map((uid) => ({
+            user_id: uid,
+            full_name: profileMap.get(uid)?.full_name || uid.slice(0, 8) + "...",
+            assigned: assignedIds.has(uid),
+          }))
       );
       setLoading(false);
     };
@@ -56,6 +58,11 @@ export function AssignStudentsDialog({ lectureId, onClose }: Props) {
     setStudents((prev) =>
       prev.map((s) => (s.user_id === userId ? { ...s, assigned: !s.assigned } : s))
     );
+  };
+
+  const selectAll = () => {
+    const allAssigned = students.every((s) => s.assigned);
+    setStudents((prev) => prev.map((s) => ({ ...s, assigned: !allAssigned })));
   };
 
   const save = async () => {
@@ -78,6 +85,8 @@ export function AssignStudentsDialog({ lectureId, onClose }: Props) {
     onClose();
   };
 
+  const allAssigned = students.length > 0 && students.every((s) => s.assigned);
+
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent dir="rtl" className="max-h-[80vh] overflow-y-auto">
@@ -87,9 +96,13 @@ export function AssignStudentsDialog({ lectureId, onClose }: Props) {
         {loading ? (
           <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin" /></div>
         ) : students.length === 0 ? (
-          <p className="text-center text-muted-foreground py-8">لا يوجد طلاب مسجلين</p>
+          <p className="text-center text-muted-foreground py-8">لا يوجد طلاب نشطين</p>
         ) : (
           <div className="space-y-3">
+            <Button variant="outline" size="sm" onClick={selectAll} className="w-full">
+              <Users className="w-4 h-4 ml-2" />
+              {allAssigned ? "إلغاء تحديد الكل" : "تحديد جميع الطلاب"}
+            </Button>
             {students.map((s) => (
               <label key={s.user_id} className="flex items-center gap-3 p-2 rounded-md hover:bg-muted cursor-pointer">
                 <Checkbox checked={s.assigned} onCheckedChange={() => toggle(s.user_id)} />
