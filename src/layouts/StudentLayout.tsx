@@ -1,7 +1,7 @@
 import { Outlet } from "react-router-dom";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { StudentSidebar } from "@/components/StudentSidebar";
-import { GraduationCap } from "lucide-react";
+import logo from "@/assets/logo.png";
 
 export default function StudentLayout() {
   return (
@@ -12,8 +12,8 @@ export default function StudentLayout() {
           <header className="h-14 flex items-center border-b bg-card px-4 gap-3">
             <SidebarTrigger />
             <div className="flex items-center gap-2">
-              <GraduationCap className="w-5 h-5 text-primary" />
-              <span className="font-heading font-semibold text-foreground">منصة التعلّم</span>
+              <img src={logo} alt="جهار" className="w-8 h-8 object-contain" />
+              <span className="font-heading font-semibold text-foreground">منصة تعلم مركز تدريب جهار</span>
             </div>
           </header>
           <main className="flex-1 p-6 bg-muted/20">

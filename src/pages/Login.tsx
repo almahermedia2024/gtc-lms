@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { GraduationCap, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import logo from "@/assets/logo.png";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Login() {
@@ -33,10 +34,8 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center bg-muted/30 px-4" dir="rtl">
       <Card className="w-full max-w-md shadow-xl border-border/50">
         <CardHeader className="text-center pb-2">
-          <div className="mx-auto w-16 h-16 rounded-2xl bg-primary flex items-center justify-center mb-4">
-            <GraduationCap className="w-8 h-8 text-primary-foreground" />
-          </div>
-          <h1 className="text-2xl font-heading font-bold text-foreground">منصة التعلّم</h1>
+          <img src={logo} alt="جهار" className="mx-auto w-24 h-24 object-contain mb-4" />
+          <h1 className="text-2xl font-heading font-bold text-foreground">منصة تعلم مركز تدريب جهار</h1>
           <p className="text-muted-foreground text-sm mt-1">سجّل دخولك للمتابعة</p>
         </CardHeader>
         <CardContent>
