@@ -7,7 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { Upload, Loader2, UserPlus, Trash2 } from "lucide-react";
+import { Upload, Loader2, UserPlus, Trash2, Pencil, Ban, CheckCircle } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import * as XLSX from "xlsx";
 
 interface StudentRow {
@@ -19,6 +20,7 @@ interface StudentRow {
 interface StudentRecord {
   user_id: string;
   full_name: string;
+  is_active: boolean;
 }
 
 export default function AdminStudents() {
@@ -31,6 +33,11 @@ export default function AdminStudents() {
   const [addOpen, setAddOpen] = useState(false);
   const [manualForm, setManualForm] = useState({ email: "", password: "", full_name: "" });
   const [addingManual, setAddingManual] = useState(false);
+
+  const [editOpen, setEditOpen] = useState(false);
+  const [editStudent, setEditStudent] = useState<StudentRecord | null>(null);
+  const [editName, setEditName] = useState("");
+  const [saving, setSaving] = useState(false);
 
   const [students, setStudents] = useState<StudentRecord[]>([]);
   const [loadingStudents, setLoadingStudents] = useState(false);
@@ -46,16 +53,20 @@ export default function AdminStudents() {
       const userIds = roles.map((r) => r.user_id);
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("user_id, full_name")
+        .select("user_id, full_name, is_active")
         .in("user_id", userIds);
 
-      const profileMap = new Map((profiles || []).map((p) => [p.user_id, p.full_name]));
+      const profileMap = new Map((profiles || []).map((p) => [p.user_id, p]));
 
       setStudents(
-        userIds.map((uid) => ({
-          user_id: uid,
-          full_name: profileMap.get(uid) || uid.slice(0, 8) + "...",
-        }))
+        userIds.map((uid) => {
+          const profile = profileMap.get(uid);
+          return {
+            user_id: uid,
+            full_name: profile?.full_name || uid.slice(0, 8) + "...",
+            is_active: profile?.is_active ?? true,
+          };
+        })
       );
     } else {
       setStudents([]);
@@ -153,9 +164,40 @@ export default function AdminStudents() {
     if (error) {
       toast({ title: "خطأ", description: error.message, variant: "destructive" });
     } else {
-      toast({ title: "تم حذف دور الطالب" });
+      toast({ title: "تم حذف الطالب" });
       fetchStudents();
     }
+  };
+
+  const handleToggleActive = async (student: StudentRecord) => {
+    const newStatus = !student.is_active;
+    const { error } = await supabase
+      .from("profiles")
+      .update({ is_active: newStatus })
+      .eq("user_id", student.user_id);
+    if (error) {
+      toast({ title: "خطأ", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: newStatus ? "تم تفعيل الطالب" : "تم تعطيل الطالب" });
+      fetchStudents();
+    }
+  };
+
+  const handleEditSave = async () => {
+    if (!editStudent || !editName.trim()) return;
+    setSaving(true);
+    const { error } = await supabase
+      .from("profiles")
+      .update({ full_name: editName.trim() })
+      .eq("user_id", editStudent.user_id);
+    if (error) {
+      toast({ title: "خطأ", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "تم تحديث الاسم" });
+      setEditOpen(false);
+      fetchStudents();
+    }
+    setSaving(false);
   };
 
   return (
@@ -174,32 +216,15 @@ export default function AdminStudents() {
             <div className="space-y-4">
               <div>
                 <Label>اسم الطالب</Label>
-                <Input
-                  type="text"
-                  placeholder="الاسم الكامل"
-                  value={manualForm.full_name}
-                  onChange={(e) => setManualForm({ ...manualForm, full_name: e.target.value })}
-                />
+                <Input type="text" placeholder="الاسم الكامل" value={manualForm.full_name} onChange={(e) => setManualForm({ ...manualForm, full_name: e.target.value })} />
               </div>
               <div>
                 <Label>البريد الإلكتروني</Label>
-                <Input
-                  type="email"
-                  placeholder="student@example.com"
-                  dir="ltr"
-                  value={manualForm.email}
-                  onChange={(e) => setManualForm({ ...manualForm, email: e.target.value })}
-                />
+                <Input type="email" placeholder="student@example.com" dir="ltr" value={manualForm.email} onChange={(e) => setManualForm({ ...manualForm, email: e.target.value })} />
               </div>
               <div>
                 <Label>كلمة المرور</Label>
-                <Input
-                  type="text"
-                  placeholder="كلمة مرور (6 أحرف على الأقل)"
-                  dir="ltr"
-                  value={manualForm.password}
-                  onChange={(e) => setManualForm({ ...manualForm, password: e.target.value })}
-                />
+                <Input type="text" placeholder="كلمة مرور (6 أحرف على الأقل)" dir="ltr" value={manualForm.password} onChange={(e) => setManualForm({ ...manualForm, password: e.target.value })} />
               </div>
               <Button onClick={handleManualAdd} className="w-full" disabled={addingManual}>
                 {addingManual ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : <UserPlus className="w-4 h-4 ml-2" />}
@@ -263,34 +288,61 @@ export default function AdminStudents() {
 
       {/* Students list */}
       <Card>
-        <CardHeader><CardTitle className="text-lg">قائمة الطلاب المسجلين</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-lg">قائمة الطلاب المسجلين ({students.length})</CardTitle></CardHeader>
         <CardContent className="p-0">
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead className="text-right">اسم الطالب</TableHead>
+                <TableHead className="text-right">الحالة</TableHead>
                 <TableHead className="text-right">إجراءات</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {students.map((s) => (
-                <TableRow key={s.user_id}>
+                <TableRow key={s.user_id} className={!s.is_active ? "opacity-60" : ""}>
                   <TableCell className="font-medium">{s.full_name}</TableCell>
                   <TableCell>
-                    <Button size="sm" variant="destructive" onClick={() => handleDeleteStudent(s.user_id)}>
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
+                    <Badge variant={s.is_active ? "default" : "secondary"}>
+                      {s.is_active ? "نشط" : "معطّل"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setEditStudent(s);
+                          setEditName(s.full_name);
+                          setEditOpen(true);
+                        }}
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant={s.is_active ? "secondary" : "outline"}
+                        onClick={() => handleToggleActive(s)}
+                        title={s.is_active ? "تعطيل" : "تفعيل"}
+                      >
+                        {s.is_active ? <Ban className="w-4 h-4" /> : <CheckCircle className="w-4 h-4" />}
+                      </Button>
+                      <Button size="sm" variant="destructive" onClick={() => handleDeleteStudent(s.user_id)}>
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
               {students.length === 0 && !loadingStudents && (
                 <TableRow>
-                  <TableCell colSpan={2} className="text-center text-muted-foreground py-8">لا يوجد طلاب مسجلين</TableCell>
+                  <TableCell colSpan={3} className="text-center text-muted-foreground py-8">لا يوجد طلاب مسجلين</TableCell>
                 </TableRow>
               )}
               {loadingStudents && (
                 <TableRow>
-                  <TableCell colSpan={2} className="text-center py-8">
+                  <TableCell colSpan={3} className="text-center py-8">
                     <Loader2 className="w-5 h-5 animate-spin mx-auto" />
                   </TableCell>
                 </TableRow>
@@ -299,6 +351,25 @@ export default function AdminStudents() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Edit Dialog */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent dir="rtl">
+          <DialogHeader>
+            <DialogTitle>تعديل بيانات الطالب</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>اسم الطالب</Label>
+              <Input value={editName} onChange={(e) => setEditName(e.target.value)} />
+            </div>
+            <Button onClick={handleEditSave} className="w-full" disabled={saving}>
+              {saving ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : null}
+              حفظ التعديلات
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
