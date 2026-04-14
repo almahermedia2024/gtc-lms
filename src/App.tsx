@@ -16,7 +16,9 @@ import StudentLectures from "./pages/student/StudentLectures";
 import NotFound from "./pages/NotFound";
 import { Loader2 } from "lucide-react";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: { queries: { retry: 1 } },
+});
 
 function RequireAuth({ role, children }: { role: "admin" | "student"; children: React.ReactNode }) {
   const { user, role: userRole, loading } = useAuth();
