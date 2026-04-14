@@ -72,3 +72,227 @@
     font-family: var(--font-body);
   }
 }
+
+/* ===== Animated Background ===== */
+@keyframes blob-move {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  25% { transform: translate(30px, -50px) scale(1.1); }
+  50% { transform: translate(-20px, 20px) scale(0.9); }
+  75% { transform: translate(20px, 40px) scale(1.05); }
+}
+
+@keyframes float-up {
+  0% { transform: translateY(100%) rotate(0deg); opacity: 0; }
+  10% { opacity: 0.6; }
+  90% { opacity: 0.4; }
+  100% { transform: translateY(-100vh) rotate(720deg); opacity: 0; }
+}
+
+@keyframes wave-move {
+  0% { transform: translateX(0) translateZ(0); }
+  50% { transform: translateX(-25%) translateZ(0); }
+  100% { transform: translateX(-50%) translateZ(0); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes glow-pulse {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.05); }
+}
+
+@keyframes card-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+.animated-bg {
+  background: linear-gradient(135deg, hsl(189 100% 15%) 0%, hsl(200 30% 12%) 50%, hsl(191 44% 20%) 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.animated-bg::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 600px 400px at 20% 30%, hsl(189 100% 23% / 0.3) 0%, transparent 70%),
+    radial-gradient(ellipse 500px 500px at 80% 70%, hsl(43 73% 47% / 0.15) 0%, transparent 70%),
+    radial-gradient(ellipse 400px 300px at 60% 20%, hsl(191 44% 40% / 0.2) 0%, transparent 70%);
+  animation: glow-pulse 6s ease-in-out infinite;
+  z-index: 0;
+}
+
+.blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  z-index: 0;
+  animation: blob-move 12s ease-in-out infinite;
+}
+
+.blob-1 {
+  width: 400px;
+  height: 400px;
+  background: hsl(189 100% 23% / 0.25);
+  top: -10%;
+  right: -5%;
+  animation-delay: 0s;
+}
+
+.blob-2 {
+  width: 300px;
+  height: 300px;
+  background: hsl(43 73% 47% / 0.2);
+  bottom: -5%;
+  left: -5%;
+  animation-delay: -4s;
+}
+
+.blob-3 {
+  width: 250px;
+  height: 250px;
+  background: hsl(191 44% 40% / 0.2);
+  top: 50%;
+  left: 40%;
+  animation-delay: -8s;
+}
+
+/* Floating particles */
+.particle {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  background: hsl(43 73% 47% / 0.5);
+  border-radius: 50%;
+  animation: float-up linear infinite;
+  z-index: 0;
+}
+
+/* Waves */
+.wave-container {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 120px;
+  overflow: hidden;
+  z-index: 0;
+}
+
+.wave {
+  position: absolute;
+  bottom: 0;
+  width: 200%;
+  height: 100%;
+  animation: wave-move 8s linear infinite;
+}
+
+.wave svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* Shimmer card effect */
+.shimmer-border {
+  position: relative;
+}
+
+.shimmer-border::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: linear-gradient(90deg, transparent, hsl(43 73% 47% / 0.4), hsl(189 100% 23% / 0.4), transparent);
+  background-size: 200% 100%;
+  animation: shimmer 3s linear infinite;
+  z-index: -1;
+}
+
+/* Glass card */
+.glass-card {
+  background: hsl(0 0% 100% / 0.08);
+  backdrop-filter: blur(20px);
+  border: 1px solid hsl(0 0% 100% / 0.12);
+}
+
+/* Student page enhancements */
+.student-bg {
+  background: linear-gradient(180deg, hsl(195 20% 95%) 0%, hsl(189 100% 23% / 0.03) 50%, hsl(195 20% 95%) 100%);
+  position: relative;
+}
+
+.student-bg::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 200px;
+  background: linear-gradient(180deg, hsl(189 100% 23% / 0.06) 0%, transparent 100%);
+  z-index: 0;
+  pointer-events: none;
+}
+
+.stat-card-hover {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.stat-card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 30px -8px hsl(189 100% 23% / 0.15);
+}
+
+.lecture-card-animated {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.lecture-card-animated::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, hsl(189 100% 23% / 0) 0%, hsl(189 100% 23% / 0.04) 100%);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.lecture-card-animated:hover {
+  transform: translateY(-3px) scale(1.01);
+  box-shadow: 0 16px 40px -12px hsl(189 100% 23% / 0.18);
+  border-color: hsl(189 100% 23% / 0.3);
+}
+
+.lecture-card-animated:hover::after {
+  opacity: 1;
+}
+
+/* Progress bar glow */
+.progress-glow {
+  box-shadow: 0 0 8px hsl(43 73% 47% / 0.4);
+}
+
+/* Stagger animation for children */
+.stagger-children > * {
+  animation: fade-in 0.4s ease-out both;
+}
+
+.stagger-children > *:nth-child(1) { animation-delay: 0.05s; }
+.stagger-children > *:nth-child(2) { animation-delay: 0.1s; }
+.stagger-children > *:nth-child(3) { animation-delay: 0.15s; }
+.stagger-children > *:nth-child(4) { animation-delay: 0.2s; }
+.stagger-children > *:nth-child(5) { animation-delay: 0.25s; }
+.stagger-children > *:nth-child(6) { animation-delay: 0.3s; }
+.stagger-children > *:nth-child(7) { animation-delay: 0.35s; }
+.stagger-children > *:nth-child(8) { animation-delay: 0.4s; }
+.stagger-children > *:nth-child(9) { animation-delay: 0.45s; }
+
+@keyframes fade-in {
+  0% { opacity: 0; transform: translateY(10px); }
+  100% { opacity: 1; transform: translateY(0); }
+}

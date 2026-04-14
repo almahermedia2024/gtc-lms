@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { VideoPlayer } from "@/components/VideoPlayer";
-import { Play, Clock, CheckCircle, BookOpen } from "lucide-react";
+import { Play, Clock, CheckCircle, BookOpen, Sparkles } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 interface LectureWithProgress {
@@ -49,7 +49,6 @@ export default function StudentLectures() {
         .select("*")
         .in("id", lectureIds);
 
-      // Get course titles
       const courseIds = [...new Set((lecs || []).map(l => l.course_id).filter(Boolean))] as string[];
       let courseMap = new Map<string, string>();
       if (courseIds.length > 0) {
@@ -138,7 +137,6 @@ export default function StudentLectures() {
     : 0;
   const totalWatchedMinutes = Math.round(lectures.reduce((sum, l) => sum + l.watched_seconds, 0) / 60);
 
-  // Group lectures by course
   const grouped = lectures.reduce<Record<string, { title: string; lectures: LectureWithProgress[] }>>((acc, l) => {
     const key = l.course_id || "__uncategorized__";
     if (!acc[key]) acc[key] = { title: l.course_title || "محاضرات عامة", lectures: [] };
@@ -148,8 +146,8 @@ export default function StudentLectures() {
 
   if (selected) {
     return (
-      <div dir="rtl">
-        <button onClick={() => setSelected(null)} className="text-primary hover:underline mb-4 text-sm font-medium">
+      <div dir="rtl" className="animate-fade-in relative z-10">
+        <button onClick={() => setSelected(null)} className="text-primary hover:underline mb-4 text-sm font-medium transition-colors">
           ← العودة للمحاضرات
         </button>
         <h2 className="text-xl font-heading font-bold mb-4">{selected.title}</h2>
@@ -160,52 +158,88 @@ export default function StudentLectures() {
   }
 
   return (
-    <div dir="rtl">
-      {studentName && <p className="text-muted-foreground mb-2">مرحباً، {studentName}</p>}
-      <h1 className="text-2xl font-heading font-bold mb-6">محاضراتي</h1>
+    <div dir="rtl" className="relative z-10">
+      {/* Welcome section */}
+      {studentName && (
+        <div className="mb-2 animate-fade-in flex items-center gap-2">
+          <Sparkles className="w-5 h-5 text-accent" />
+          <p className="text-muted-foreground">مرحباً، <span className="font-semibold text-foreground">{studentName}</span></p>
+        </div>
+      )}
+      <h1 className="text-2xl font-heading font-bold mb-6 animate-fade-in">محاضراتي</h1>
 
+      {/* Stats cards */}
       {totalLectures > 0 && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <Card><CardContent className="pt-4 pb-4 text-center">
-            <BookOpen className="w-6 h-6 mx-auto mb-1 text-primary" />
-            <p className="text-2xl font-bold">{totalLectures}</p>
-            <p className="text-xs text-muted-foreground">إجمالي المحاضرات</p>
-          </CardContent></Card>
-          <Card><CardContent className="pt-4 pb-4 text-center">
-            <CheckCircle className="w-6 h-6 mx-auto mb-1 text-accent" />
-            <p className="text-2xl font-bold">{completedLectures}</p>
-            <p className="text-xs text-muted-foreground">مكتملة</p>
-          </CardContent></Card>
-          <Card><CardContent className="pt-4 pb-4 text-center">
-            <Play className="w-6 h-6 mx-auto mb-1 text-secondary" />
-            <p className="text-2xl font-bold">{avgProgress}%</p>
-            <p className="text-xs text-muted-foreground">متوسط التقدم</p>
-          </CardContent></Card>
-          <Card><CardContent className="pt-4 pb-4 text-center">
-            <Clock className="w-6 h-6 mx-auto mb-1 text-muted-foreground" />
-            <p className="text-2xl font-bold">{totalWatchedMinutes}</p>
-            <p className="text-xs text-muted-foreground">دقيقة مشاهدة</p>
-          </CardContent></Card>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 stagger-children">
+          <Card className="stat-card-hover border-border/50 overflow-hidden relative group">
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            <CardContent className="pt-4 pb-4 text-center relative">
+              <div className="w-10 h-10 mx-auto mb-2 rounded-xl bg-primary/10 flex items-center justify-center">
+                <BookOpen className="w-5 h-5 text-primary" />
+              </div>
+              <p className="text-2xl font-bold font-heading">{totalLectures}</p>
+              <p className="text-xs text-muted-foreground">إجمالي المحاضرات</p>
+            </CardContent>
+          </Card>
+          <Card className="stat-card-hover border-border/50 overflow-hidden relative group">
+            <div className="absolute inset-0 bg-gradient-to-br from-accent/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            <CardContent className="pt-4 pb-4 text-center relative">
+              <div className="w-10 h-10 mx-auto mb-2 rounded-xl bg-accent/10 flex items-center justify-center">
+                <CheckCircle className="w-5 h-5 text-accent" />
+              </div>
+              <p className="text-2xl font-bold font-heading">{completedLectures}</p>
+              <p className="text-xs text-muted-foreground">مكتملة</p>
+            </CardContent>
+          </Card>
+          <Card className="stat-card-hover border-border/50 overflow-hidden relative group">
+            <div className="absolute inset-0 bg-gradient-to-br from-secondary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            <CardContent className="pt-4 pb-4 text-center relative">
+              <div className="w-10 h-10 mx-auto mb-2 rounded-xl bg-secondary/10 flex items-center justify-center">
+                <Play className="w-5 h-5 text-secondary" />
+              </div>
+              <p className="text-2xl font-bold font-heading">{avgProgress}%</p>
+              <p className="text-xs text-muted-foreground">متوسط التقدم</p>
+            </CardContent>
+          </Card>
+          <Card className="stat-card-hover border-border/50 overflow-hidden relative group">
+            <div className="absolute inset-0 bg-gradient-to-br from-muted-foreground/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            <CardContent className="pt-4 pb-4 text-center relative">
+              <div className="w-10 h-10 mx-auto mb-2 rounded-xl bg-muted flex items-center justify-center">
+                <Clock className="w-5 h-5 text-muted-foreground" />
+              </div>
+              <p className="text-2xl font-bold font-heading">{totalWatchedMinutes}</p>
+              <p className="text-xs text-muted-foreground">دقيقة مشاهدة</p>
+            </CardContent>
+          </Card>
         </div>
       )}
 
+      {/* Lectures */}
       {lectures.length === 0 ? (
-        <div className="text-center text-muted-foreground py-16">
-          <Play className="w-12 h-12 mx-auto mb-4 opacity-30" />
+        <div className="text-center text-muted-foreground py-16 animate-fade-in">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-muted flex items-center justify-center">
+            <Play className="w-8 h-8 opacity-30" />
+          </div>
           <p>لا توجد محاضرات مخصصة لك بعد</p>
         </div>
       ) : (
         <div className="space-y-8">
           {Object.entries(grouped).map(([courseId, group]) => (
-            <div key={courseId}>
+            <div key={courseId} className="animate-fade-in">
               <div className="flex items-center gap-2 mb-4">
-                <BookOpen className="w-5 h-5 text-primary" />
+                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <BookOpen className="w-4 h-4 text-primary" />
+                </div>
                 <h2 className="text-lg font-heading font-bold">{group.title}</h2>
-                <Badge variant="secondary">{group.lectures.length} محاضرة</Badge>
+                <Badge variant="secondary" className="text-xs">{group.lectures.length} محاضرة</Badge>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 stagger-children">
                 {group.lectures.map((l) => (
-                  <Card key={l.id} className="cursor-pointer hover:shadow-lg transition-shadow border-border/50" onClick={() => handleOpenLecture(l)}>
+                  <Card
+                    key={l.id}
+                    className="cursor-pointer lecture-card-animated border-border/50"
+                    onClick={() => handleOpenLecture(l)}
+                  >
                     <CardHeader className="pb-2">
                       <CardTitle className="text-base font-heading">{l.title}</CardTitle>
                     </CardHeader>
@@ -216,7 +250,10 @@ export default function StudentLectures() {
                         <span className="flex items-center gap-1"><CheckCircle className="w-3.5 h-3.5" />{Math.round(l.completion_percentage)}%</span>
                       </div>
                       <div className="mt-2 w-full h-1.5 bg-muted rounded-full overflow-hidden">
-                        <div className="h-full bg-accent rounded-full transition-all" style={{ width: `${l.completion_percentage}%` }} />
+                        <div
+                          className={`h-full bg-accent rounded-full transition-all duration-500 ${l.completion_percentage > 0 ? 'progress-glow' : ''}`}
+                          style={{ width: `${l.completion_percentage}%` }}
+                        />
                       </div>
                       {l.last_watched_at && (
                         <p className="text-xs text-muted-foreground mt-2">آخر مشاهدة: {new Date(l.last_watched_at).toLocaleDateString("ar")}</p>
