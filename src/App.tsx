@@ -11,6 +11,7 @@ import StudentLayout from "./layouts/StudentLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminLectures from "./pages/admin/AdminLectures";
 import AdminStudents from "./pages/admin/AdminStudents";
+import AdminCourses from "./pages/admin/AdminCourses";
 import AdminReports from "./pages/admin/AdminReports";
 import StudentLectures from "./pages/student/StudentLectures";
 import NotFound from "./pages/NotFound";
@@ -40,6 +41,7 @@ const App = () => (
             <Route path="/login" element={<Login />} />
             <Route path="/admin" element={<RequireAuth role="admin"><AdminLayout /></RequireAuth>}>
               <Route index element={<AdminDashboard />} />
+              <Route path="courses" element={<AdminCourses />} />
               <Route path="lectures" element={<AdminLectures />} />
               <Route path="students" element={<AdminStudents />} />
               <Route path="reports" element={<AdminReports />} />

@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { VideoPlayer } from "@/components/VideoPlayer";
 import { Play, Clock, CheckCircle, BookOpen } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 interface LectureWithProgress {
   id: string;
@@ -11,6 +12,8 @@ interface LectureWithProgress {
   description: string | null;
   video_url: string;
   duration_minutes: number | null;
+  course_id: string | null;
+  course_title: string | null;
   watched_seconds: number;
   completion_percentage: number;
   open_count: number;
@@ -25,8 +28,7 @@ export default function StudentLectures() {
 
   useEffect(() => {
     if (!user) return;
-    const fetch = async () => {
-      // Get student name
+    const fetchData = async () => {
       const { data: profile } = await supabase
         .from("profiles")
         .select("full_name")
@@ -34,7 +36,6 @@ export default function StudentLectures() {
         .maybeSingle();
       if (profile) setStudentName(profile.full_name);
 
-      // Get assigned lectures
       const { data: assignments } = await supabase
         .from("student_lectures")
         .select("lecture_id")
@@ -48,6 +49,17 @@ export default function StudentLectures() {
         .select("*")
         .in("id", lectureIds);
 
+      // Get course titles
+      const courseIds = [...new Set((lecs || []).map(l => l.course_id).filter(Boolean))] as string[];
+      let courseMap = new Map<string, string>();
+      if (courseIds.length > 0) {
+        const { data: courses } = await supabase
+          .from("courses")
+          .select("id, title")
+          .in("id", courseIds);
+        courseMap = new Map((courses || []).map(c => [c.id, c.title]));
+      }
+
       const { data: progress } = await supabase
         .from("watch_progress")
         .select("*")
@@ -60,6 +72,7 @@ export default function StudentLectures() {
           const p = progressMap.get(l.id);
           return {
             ...l,
+            course_title: l.course_id ? courseMap.get(l.course_id) || null : null,
             watched_seconds: p?.watched_seconds || 0,
             completion_percentage: p?.completion_percentage || 0,
             open_count: p?.open_count || 0,
@@ -68,7 +81,7 @@ export default function StudentLectures() {
         })
       );
     };
-    fetch();
+    fetchData();
   }, [user]);
 
   const handleOpenLecture = async (lecture: LectureWithProgress) => {
@@ -101,7 +114,6 @@ export default function StudentLectures() {
     async (watchedSeconds: number, totalDuration: number) => {
       if (!user || !selected) return;
       const pct = totalDuration > 0 ? (watchedSeconds / totalDuration) * 100 : 0;
-
       await supabase
         .from("watch_progress")
         .upsert(
@@ -119,13 +131,20 @@ export default function StudentLectures() {
     [user, selected]
   );
 
-  // Calculate overall stats
   const totalLectures = lectures.length;
   const completedLectures = lectures.filter((l) => l.completion_percentage >= 90).length;
   const avgProgress = totalLectures > 0
     ? Math.round(lectures.reduce((sum, l) => sum + l.completion_percentage, 0) / totalLectures)
     : 0;
   const totalWatchedMinutes = Math.round(lectures.reduce((sum, l) => sum + l.watched_seconds, 0) / 60);
+
+  // Group lectures by course
+  const grouped = lectures.reduce<Record<string, { title: string; lectures: LectureWithProgress[] }>>((acc, l) => {
+    const key = l.course_id || "__uncategorized__";
+    if (!acc[key]) acc[key] = { title: l.course_title || "محاضرات عامة", lectures: [] };
+    acc[key].lectures.push(l);
+    return acc;
+  }, {});
 
   if (selected) {
     return (
@@ -142,42 +161,31 @@ export default function StudentLectures() {
 
   return (
     <div dir="rtl">
-      {studentName && (
-        <p className="text-muted-foreground mb-2">مرحباً، {studentName}</p>
-      )}
+      {studentName && <p className="text-muted-foreground mb-2">مرحباً، {studentName}</p>}
       <h1 className="text-2xl font-heading font-bold mb-6">محاضراتي</h1>
 
-      {/* Progress Summary */}
       {totalLectures > 0 && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <Card>
-            <CardContent className="pt-4 pb-4 text-center">
-              <BookOpen className="w-6 h-6 mx-auto mb-1 text-primary" />
-              <p className="text-2xl font-bold">{totalLectures}</p>
-              <p className="text-xs text-muted-foreground">إجمالي المحاضرات</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-4 pb-4 text-center">
-              <CheckCircle className="w-6 h-6 mx-auto mb-1 text-accent" />
-              <p className="text-2xl font-bold">{completedLectures}</p>
-              <p className="text-xs text-muted-foreground">مكتملة</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-4 pb-4 text-center">
-              <Play className="w-6 h-6 mx-auto mb-1 text-secondary" />
-              <p className="text-2xl font-bold">{avgProgress}%</p>
-              <p className="text-xs text-muted-foreground">متوسط التقدم</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-4 pb-4 text-center">
-              <Clock className="w-6 h-6 mx-auto mb-1 text-muted-foreground" />
-              <p className="text-2xl font-bold">{totalWatchedMinutes}</p>
-              <p className="text-xs text-muted-foreground">دقيقة مشاهدة</p>
-            </CardContent>
-          </Card>
+          <Card><CardContent className="pt-4 pb-4 text-center">
+            <BookOpen className="w-6 h-6 mx-auto mb-1 text-primary" />
+            <p className="text-2xl font-bold">{totalLectures}</p>
+            <p className="text-xs text-muted-foreground">إجمالي المحاضرات</p>
+          </CardContent></Card>
+          <Card><CardContent className="pt-4 pb-4 text-center">
+            <CheckCircle className="w-6 h-6 mx-auto mb-1 text-accent" />
+            <p className="text-2xl font-bold">{completedLectures}</p>
+            <p className="text-xs text-muted-foreground">مكتملة</p>
+          </CardContent></Card>
+          <Card><CardContent className="pt-4 pb-4 text-center">
+            <Play className="w-6 h-6 mx-auto mb-1 text-secondary" />
+            <p className="text-2xl font-bold">{avgProgress}%</p>
+            <p className="text-xs text-muted-foreground">متوسط التقدم</p>
+          </CardContent></Card>
+          <Card><CardContent className="pt-4 pb-4 text-center">
+            <Clock className="w-6 h-6 mx-auto mb-1 text-muted-foreground" />
+            <p className="text-2xl font-bold">{totalWatchedMinutes}</p>
+            <p className="text-xs text-muted-foreground">دقيقة مشاهدة</p>
+          </CardContent></Card>
         </div>
       )}
 
@@ -187,36 +195,37 @@ export default function StudentLectures() {
           <p>لا توجد محاضرات مخصصة لك بعد</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {lectures.map((l) => (
-            <Card
-              key={l.id}
-              className="cursor-pointer hover:shadow-lg transition-shadow border-border/50"
-              onClick={() => handleOpenLecture(l)}
-            >
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base font-heading">{l.title}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {l.description && <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{l.description}</p>}
-                <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                  <span className="flex items-center gap-1">
-                    <Clock className="w-3.5 h-3.5" />{l.duration_minutes || 0} د
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <CheckCircle className="w-3.5 h-3.5" />{Math.round(l.completion_percentage)}%
-                  </span>
-                </div>
-                <div className="mt-2 w-full h-1.5 bg-muted rounded-full overflow-hidden">
-                  <div className="h-full bg-accent rounded-full transition-all" style={{ width: `${l.completion_percentage}%` }} />
-                </div>
-                {l.last_watched_at && (
-                  <p className="text-xs text-muted-foreground mt-2">
-                    آخر مشاهدة: {new Date(l.last_watched_at).toLocaleDateString("ar")}
-                  </p>
-                )}
-              </CardContent>
-            </Card>
+        <div className="space-y-8">
+          {Object.entries(grouped).map(([courseId, group]) => (
+            <div key={courseId}>
+              <div className="flex items-center gap-2 mb-4">
+                <BookOpen className="w-5 h-5 text-primary" />
+                <h2 className="text-lg font-heading font-bold">{group.title}</h2>
+                <Badge variant="secondary">{group.lectures.length} محاضرة</Badge>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {group.lectures.map((l) => (
+                  <Card key={l.id} className="cursor-pointer hover:shadow-lg transition-shadow border-border/50" onClick={() => handleOpenLecture(l)}>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-base font-heading">{l.title}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {l.description && <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{l.description}</p>}
+                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" />{l.duration_minutes || 0} د</span>
+                        <span className="flex items-center gap-1"><CheckCircle className="w-3.5 h-3.5" />{Math.round(l.completion_percentage)}%</span>
+                      </div>
+                      <div className="mt-2 w-full h-1.5 bg-muted rounded-full overflow-hidden">
+                        <div className="h-full bg-accent rounded-full transition-all" style={{ width: `${l.completion_percentage}%` }} />
+                      </div>
+                      {l.last_watched_at && (
+                        <p className="text-xs text-muted-foreground mt-2">آخر مشاهدة: {new Date(l.last_watched_at).toLocaleDateString("ar")}</p>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
           ))}
         </div>
       )}
