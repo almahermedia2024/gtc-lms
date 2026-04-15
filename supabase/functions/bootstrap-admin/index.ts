@@ -1,5 +1,9 @@
 import { createClient } from "@supabase/supabase-js";
-import { corsHeaders } from "@supabase/supabase-js/cors";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -7,6 +11,31 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Require a shared secret to prevent unauthorized access
+    const bootstrapSecret = Deno.env.get("BOOTSTRAP_ADMIN_SECRET");
+    if (!bootstrapSecret) {
+      return new Response(JSON.stringify({ error: "Bootstrap not configured" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const { email, password, secret } = await req.json();
+
+    if (!secret || secret !== bootstrapSecret) {
+      return new Response(JSON.stringify({ error: "Invalid bootstrap secret" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (!email || !password) {
+      return new Response(JSON.stringify({ error: "email and password required" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
@@ -20,14 +49,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { email, password } = await req.json();
-    if (!email || !password) {
-      return new Response(JSON.stringify({ error: "email and password required" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
     const { data: newUser, error: createError } = await adminClient.auth.admin.createUser({
       email,
       password,
@@ -35,7 +56,8 @@ Deno.serve(async (req) => {
     });
 
     if (createError) {
-      return new Response(JSON.stringify({ error: createError.message }), {
+      console.error("Create admin error:", createError);
+      return new Response(JSON.stringify({ error: "Failed to create admin account" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -46,11 +68,12 @@ Deno.serve(async (req) => {
       role: "admin",
     });
 
-    return new Response(JSON.stringify({ success: true, user_id: newUser.user.id }), {
+    return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), {
+    console.error("Bootstrap admin error:", err);
+    return new Response(JSON.stringify({ error: "Internal server error" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
