@@ -21,8 +21,7 @@ Deno.serve(async (req) => {
     );
 
     if (error) {
-      console.error("Reset error:", error);
-      return new Response(JSON.stringify({ error: "Failed to reset password" }), {
+      return new Response(JSON.stringify({ error: error.message }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -31,9 +30,9 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ success: true, email: data.user.email }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
-  } catch (err) {
-    console.error("Error:", err);
-    return new Response(JSON.stringify({ error: "Internal error" }), {
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    return new Response(JSON.stringify({ error: message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
