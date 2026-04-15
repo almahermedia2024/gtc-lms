@@ -141,7 +141,7 @@ export default function Login() {
             <img src={logo} alt="جهار" className="relative mx-auto w-24 h-24 object-contain drop-shadow-lg" />
           </div>
           <h1 className="text-2xl font-heading font-bold text-primary-foreground">
-            منصة تعلم مركز تدريب جهار
+            منصة تعلم مركز تدريب<br />الهيئة العامة للاعتماد والرقابة الصحية
           </h1>
           <p className="text-primary-foreground/60 text-sm mt-1">سجّل دخولك للمتابعة</p>
         </CardHeader>
