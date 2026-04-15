@@ -64,9 +64,11 @@ Deno.serve(async (req) => {
     if (Object.keys(authUpdates).length > 0) {
       const { error: authError } = await adminClient.auth.admin.updateUserById(user_id, authUpdates);
       if (authError) {
-        return new Response(JSON.stringify({ error: authError.message }), {
+        console.error("Update auth error:", authError);
+        return new Response(JSON.stringify({ error: "Failed to update credentials" }), {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
         });
       }
     }
@@ -82,7 +84,8 @@ Deno.serve(async (req) => {
         .update(profileUpdates)
         .eq("user_id", user_id);
       if (profileError) {
-        return new Response(JSON.stringify({ error: profileError.message }), {
+        console.error("Update profile error:", profileError);
+        return new Response(JSON.stringify({ error: "Failed to update profile" }), {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
@@ -93,7 +96,8 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), {
+    console.error("Update student error:", err);
+    return new Response(JSON.stringify({ error: "Internal server error" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
