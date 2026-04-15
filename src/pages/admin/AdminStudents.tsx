@@ -243,7 +243,7 @@ export default function AdminStudents() {
               </div>
               <div>
                 <Label>كلمة المرور</Label>
-                <Input type="text" placeholder="كلمة مرور (6 أحرف على الأقل)" dir="ltr" value={manualForm.password} onChange={(e) => setManualForm({ ...manualForm, password: e.target.value })} />
+                <Input type="password" placeholder="كلمة مرور (6 أحرف على الأقل)" dir="ltr" value={manualForm.password} onChange={(e) => setManualForm({ ...manualForm, password: e.target.value })} />
               </div>
               <Button onClick={handleManualAdd} className="w-full" disabled={addingManual}>
                 {addingManual ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : <UserPlus className="w-4 h-4 ml-2" />}
@@ -404,7 +404,7 @@ export default function AdminStudents() {
             </div>
             <div>
               <Label>كلمة المرور الجديدة</Label>
-              <Input type="text" dir="ltr" placeholder="اترك فارغاً إذا لم ترد التغيير" value={editForm.password} onChange={(e) => setEditForm({ ...editForm, password: e.target.value })} />
+              <Input type="password" dir="ltr" placeholder="اترك فارغاً إذا لم ترد التغيير" value={editForm.password} onChange={(e) => setEditForm({ ...editForm, password: e.target.value })} />
             </div>
             <Button onClick={handleEditSave} className="w-full" disabled={saving}>
               {saving ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : null}
