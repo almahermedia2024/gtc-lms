@@ -41,7 +41,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { email, password, full_name } = await req.json();
+    const { email, password, full_name, phone } = await req.json();
     if (!email || !password) {
       return new Response(JSON.stringify({ error: "email and password required" }), {
         status: 400,
@@ -63,16 +63,15 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Assign student role
     await adminClient.from("user_roles").insert({
       user_id: newUser.user.id,
       role: "student",
     });
 
-    // Create profile with name
     await adminClient.from("profiles").insert({
       user_id: newUser.user.id,
       full_name: full_name || email.split("@")[0],
+      phone: phone || "",
     });
 
     return new Response(JSON.stringify({ success: true, user_id: newUser.user.id }), {

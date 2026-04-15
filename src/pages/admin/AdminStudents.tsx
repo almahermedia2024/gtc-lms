@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { Upload, Loader2, UserPlus, Trash2, Pencil, Ban, CheckCircle } from "lucide-react";
+import { Upload, Loader2, UserPlus, Trash2, Pencil, Ban, CheckCircle, Phone, Mail } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import * as XLSX from "xlsx";
 
@@ -15,12 +15,14 @@ interface StudentRow {
   email: string;
   password: string;
   full_name?: string;
+  phone?: string;
 }
 
 interface StudentRecord {
   user_id: string;
   full_name: string;
   is_active: boolean;
+  phone: string;
 }
 
 export default function AdminStudents() {
@@ -31,12 +33,12 @@ export default function AdminStudents() {
   const [results, setResults] = useState<{ email: string; status: string }[]>([]);
 
   const [addOpen, setAddOpen] = useState(false);
-  const [manualForm, setManualForm] = useState({ email: "", password: "", full_name: "" });
+  const [manualForm, setManualForm] = useState({ email: "", password: "", full_name: "", phone: "" });
   const [addingManual, setAddingManual] = useState(false);
 
   const [editOpen, setEditOpen] = useState(false);
   const [editStudent, setEditStudent] = useState<StudentRecord | null>(null);
-  const [editName, setEditName] = useState("");
+  const [editForm, setEditForm] = useState({ full_name: "", email: "", phone: "", password: "" });
   const [saving, setSaving] = useState(false);
 
   const [students, setStudents] = useState<StudentRecord[]>([]);
@@ -53,7 +55,7 @@ export default function AdminStudents() {
       const userIds = roles.map((r) => r.user_id);
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("user_id, full_name, is_active")
+        .select("user_id, full_name, is_active, phone")
         .in("user_id", userIds);
 
       const profileMap = new Map((profiles || []).map((p) => [p.user_id, p]));
@@ -65,6 +67,7 @@ export default function AdminStudents() {
             user_id: uid,
             full_name: profile?.full_name || uid.slice(0, 8) + "...",
             is_active: profile?.is_active ?? true,
+            phone: (profile as any)?.phone || "",
           };
         })
       );
@@ -95,13 +98,14 @@ export default function AdminStudents() {
           email: manualForm.email.trim(),
           password: manualForm.password.trim(),
           full_name: manualForm.full_name.trim() || undefined,
+          phone: manualForm.phone.trim() || undefined,
         },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
 
       toast({ title: "تم إنشاء حساب الطالب بنجاح" });
-      setManualForm({ email: "", password: "", full_name: "" });
+      setManualForm({ email: "", password: "", full_name: "", phone: "" });
       setAddOpen(false);
       fetchStudents();
     } catch (err: any) {
@@ -126,6 +130,7 @@ export default function AdminStudents() {
         email: String(r.email).trim(),
         password: String(r.password).trim(),
         full_name: r.full_name ? String(r.full_name).trim() : r.name ? String(r.name).trim() : undefined,
+        phone: r.phone ? String(r.phone).trim() : undefined,
       }));
 
     if (studentsData.length === 0) {
@@ -143,7 +148,7 @@ export default function AdminStudents() {
     for (const s of parsed) {
       try {
         const { data, error } = await supabase.functions.invoke("create-student", {
-          body: { email: s.email, password: s.password, full_name: s.full_name },
+          body: { email: s.email, password: s.password, full_name: s.full_name, phone: s.phone },
         });
         if (error) throw error;
         if (data?.error) throw new Error(data.error);
@@ -188,18 +193,24 @@ export default function AdminStudents() {
   };
 
   const handleEditSave = async () => {
-    if (!editStudent || !editName.trim()) return;
+    if (!editStudent) return;
     setSaving(true);
-    const { error } = await supabase
-      .from("profiles")
-      .update({ full_name: editName.trim() })
-      .eq("user_id", editStudent.user_id);
-    if (error) {
-      toast({ title: "خطأ", description: error.message, variant: "destructive" });
-    } else {
-      toast({ title: "تم تحديث الاسم" });
+    try {
+      const body: any = { user_id: editStudent.user_id };
+      if (editForm.full_name.trim()) body.full_name = editForm.full_name.trim();
+      if (editForm.email.trim()) body.email = editForm.email.trim();
+      if (editForm.phone !== undefined) body.phone = editForm.phone.trim();
+      if (editForm.password.trim()) body.password = editForm.password.trim();
+
+      const { data, error } = await supabase.functions.invoke("update-student", { body });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      toast({ title: "تم تحديث بيانات الطالب" });
       setEditOpen(false);
       fetchStudents();
+    } catch (err: any) {
+      toast({ title: "خطأ", description: err.message || "فشل التحديث", variant: "destructive" });
     }
     setSaving(false);
   };
@@ -227,6 +238,10 @@ export default function AdminStudents() {
                 <Input type="email" placeholder="student@example.com" dir="ltr" value={manualForm.email} onChange={(e) => setManualForm({ ...manualForm, email: e.target.value })} />
               </div>
               <div>
+                <Label>رقم الهاتف</Label>
+                <Input type="tel" placeholder="01xxxxxxxxx" dir="ltr" value={manualForm.phone} onChange={(e) => setManualForm({ ...manualForm, phone: e.target.value })} />
+              </div>
+              <div>
                 <Label>كلمة المرور</Label>
                 <Input type="text" placeholder="كلمة مرور (6 أحرف على الأقل)" dir="ltr" value={manualForm.password} onChange={(e) => setManualForm({ ...manualForm, password: e.target.value })} />
               </div>
@@ -246,7 +261,7 @@ export default function AdminStudents() {
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground mb-4">
-            يجب أن يحتوي الملف على أعمدة: <strong>email</strong> و <strong>password</strong> و <strong>full_name</strong> (اختياري)
+            يجب أن يحتوي الملف على أعمدة: <strong>email</strong> و <strong>password</strong> و <strong>full_name</strong> (اختياري) و <strong>phone</strong> (اختياري)
           </p>
           <div className="flex gap-3">
             <input ref={fileRef} type="file" accept=".csv,.xlsx,.xls" onChange={handleFile} className="hidden" />
@@ -273,14 +288,16 @@ export default function AdminStudents() {
                 <TableRow>
                   <TableHead className="text-right">الاسم</TableHead>
                   <TableHead className="text-right">البريد الإلكتروني</TableHead>
+                  <TableHead className="text-right">الهاتف</TableHead>
                   <TableHead className="text-right">الحالة</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {(results.length > 0 ? results.map((r, i) => ({ ...r, full_name: parsed[i]?.full_name || "" })) : parsed).map((row, i) => (
+                {(results.length > 0 ? results.map((r, i) => ({ ...r, full_name: parsed[i]?.full_name || "", phone: parsed[i]?.phone || "" })) : parsed).map((row, i) => (
                   <TableRow key={i}>
                     <TableCell>{row.full_name || "—"}</TableCell>
                     <TableCell>{row.email}</TableCell>
+                    <TableCell>{(row as any).phone || "—"}</TableCell>
                     <TableCell>{"status" in row ? (row as any).status : "جاهز"}</TableCell>
                   </TableRow>
                 ))}
@@ -298,6 +315,7 @@ export default function AdminStudents() {
             <TableHeader>
               <TableRow>
                 <TableHead className="text-right">اسم الطالب</TableHead>
+                <TableHead className="text-right">الهاتف</TableHead>
                 <TableHead className="text-right">الحالة</TableHead>
                 <TableHead className="text-right">إجراءات</TableHead>
               </TableRow>
@@ -306,6 +324,14 @@ export default function AdminStudents() {
               {students.map((s) => (
                 <TableRow key={s.user_id} className={!s.is_active ? "opacity-60" : ""}>
                   <TableCell className="font-medium">{s.full_name}</TableCell>
+                  <TableCell dir="ltr" className="text-right">
+                    {s.phone ? (
+                      <span className="flex items-center gap-1 justify-end">
+                        <Phone className="w-3 h-3 text-muted-foreground" />
+                        {s.phone}
+                      </span>
+                    ) : "—"}
+                  </TableCell>
                   <TableCell>
                     <Badge variant={s.is_active ? "default" : "secondary"}>
                       {s.is_active ? "نشط" : "معطّل"}
@@ -318,7 +344,7 @@ export default function AdminStudents() {
                         variant="outline"
                         onClick={() => {
                           setEditStudent(s);
-                          setEditName(s.full_name);
+                          setEditForm({ full_name: s.full_name, email: "", phone: s.phone, password: "" });
                           setEditOpen(true);
                         }}
                       >
@@ -341,12 +367,12 @@ export default function AdminStudents() {
               ))}
               {students.length === 0 && !loadingStudents && (
                 <TableRow>
-                  <TableCell colSpan={3} className="text-center text-muted-foreground py-8">لا يوجد طلاب مسجلين</TableCell>
+                  <TableCell colSpan={4} className="text-center text-muted-foreground py-8">لا يوجد طلاب مسجلين</TableCell>
                 </TableRow>
               )}
               {loadingStudents && (
                 <TableRow>
-                  <TableCell colSpan={3} className="text-center py-8">
+                  <TableCell colSpan={4} className="text-center py-8">
                     <Loader2 className="w-5 h-5 animate-spin mx-auto" />
                   </TableCell>
                 </TableRow>
@@ -361,11 +387,24 @@ export default function AdminStudents() {
         <DialogContent dir="rtl">
           <DialogHeader>
             <DialogTitle>تعديل بيانات الطالب</DialogTitle>
+            <DialogDescription>يمكنك تعديل أي من الحقول التالية. اترك الحقل فارغاً إذا لم ترد تغييره.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
               <Label>اسم الطالب</Label>
-              <Input value={editName} onChange={(e) => setEditName(e.target.value)} />
+              <Input value={editForm.full_name} onChange={(e) => setEditForm({ ...editForm, full_name: e.target.value })} />
+            </div>
+            <div>
+              <Label>البريد الإلكتروني الجديد</Label>
+              <Input type="email" dir="ltr" placeholder="اترك فارغاً إذا لم ترد التغيير" value={editForm.email} onChange={(e) => setEditForm({ ...editForm, email: e.target.value })} />
+            </div>
+            <div>
+              <Label>رقم الهاتف</Label>
+              <Input type="tel" dir="ltr" placeholder="01xxxxxxxxx" value={editForm.phone} onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })} />
+            </div>
+            <div>
+              <Label>كلمة المرور الجديدة</Label>
+              <Input type="text" dir="ltr" placeholder="اترك فارغاً إذا لم ترد التغيير" value={editForm.password} onChange={(e) => setEditForm({ ...editForm, password: e.target.value })} />
             </div>
             <Button onClick={handleEditSave} className="w-full" disabled={saving}>
               {saving ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : null}
