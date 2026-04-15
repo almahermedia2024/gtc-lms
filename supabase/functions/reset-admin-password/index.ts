@@ -17,7 +17,7 @@ Deno.serve(async (req) => {
 
     const { data, error } = await adminClient.auth.admin.updateUserById(
       "33b308f1-0faf-4107-981b-25f38597b683",
-      { password: "admin123456" }
+      { password: "Admin@LMS2026#Secure" }
     );
 
     if (error) {
