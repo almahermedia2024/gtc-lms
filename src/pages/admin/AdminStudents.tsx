@@ -160,12 +160,16 @@ export default function AdminStudents() {
   };
 
   const handleDeleteStudent = async (userId: string) => {
-    const { error } = await supabase.from("user_roles").delete().eq("user_id", userId).eq("role", "student");
-    if (error) {
-      toast({ title: "خطأ", description: error.message, variant: "destructive" });
-    } else {
-      toast({ title: "تم حذف الطالب" });
+    try {
+      const { data, error } = await supabase.functions.invoke("delete-student", {
+        body: { user_id: userId },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast({ title: "تم حذف الطالب بالكامل" });
       fetchStudents();
+    } catch (err: any) {
+      toast({ title: "خطأ", description: err.message || "فشل حذف الطالب", variant: "destructive" });
     }
   };
 
