@@ -41,41 +41,33 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { email, password, full_name } = await req.json();
-    if (!email || !password) {
-      return new Response(JSON.stringify({ error: "email and password required" }), {
+    const { user_id } = await req.json();
+    if (!user_id) {
+      return new Response(JSON.stringify({ error: "user_id required" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
-    const { data: newUser, error: createError } = await adminClient.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,
-    });
 
-    if (createError) {
-      return new Response(JSON.stringify({ error: createError.message }), {
+    // Delete related data first
+    await adminClient.from("watch_progress").delete().eq("student_id", user_id);
+    await adminClient.from("student_lectures").delete().eq("student_id", user_id);
+    await adminClient.from("course_students").delete().eq("student_id", user_id);
+    await adminClient.from("user_roles").delete().eq("user_id", user_id);
+    await adminClient.from("profiles").delete().eq("user_id", user_id);
+
+    // Delete auth user
+    const { error: deleteError } = await adminClient.auth.admin.deleteUser(user_id);
+    if (deleteError) {
+      return new Response(JSON.stringify({ error: deleteError.message }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Assign student role
-    await adminClient.from("user_roles").insert({
-      user_id: newUser.user.id,
-      role: "student",
-    });
-
-    // Create profile with name
-    await adminClient.from("profiles").insert({
-      user_id: newUser.user.id,
-      full_name: full_name || email.split("@")[0],
-    });
-
-    return new Response(JSON.stringify({ success: true, user_id: newUser.user.id }), {
+    return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
