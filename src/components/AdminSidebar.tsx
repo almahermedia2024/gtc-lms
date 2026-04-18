@@ -1,4 +1,4 @@
-import { LayoutDashboard, Video, Users, BarChart3, LogOut, BookOpen } from "lucide-react";
+import { LayoutDashboard, Video, Users, BarChart3, LogOut, BookOpen, ShieldCheck } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -21,6 +21,7 @@ const items = [
   { title: "المحاضرات", url: "/admin/lectures", icon: Video },
   { title: "الطلاب", url: "/admin/students", icon: Users },
   { title: "التقارير", url: "/admin/reports", icon: BarChart3 },
+  { title: "حساب المسؤول", url: "/admin/account", icon: ShieldCheck },
 ];
 
 export function AdminSidebar() {
