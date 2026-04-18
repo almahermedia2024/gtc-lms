@@ -72,41 +72,45 @@ export default function AdminCourses() {
     if (!removeAllCourse) return;
     setRemovingAll(true);
 
-    // Get all lectures of this course
-    const { data: courseLectures } = await supabase
-      .from("lectures")
-      .select("id")
-      .eq("course_id", removeAllCourse.id);
-
     // Get enrolled students of this course
     const { data: enrollments } = await supabase
       .from("course_students")
       .select("student_id")
       .eq("course_id", removeAllCourse.id);
-    const studentIds = (enrollments || []).map(e => e.student_id);
+    const studentIds = Array.from(new Set((enrollments || []).map(e => e.student_id)));
 
-    // Remove student_lectures for these students for these lectures
-    if (courseLectures && courseLectures.length > 0 && studentIds.length > 0) {
-      const lectureIds = courseLectures.map(l => l.id);
-      await supabase
-        .from("student_lectures")
-        .delete()
-        .in("lecture_id", lectureIds)
-        .in("student_id", studentIds);
+    if (studentIds.length === 0) {
+      toast({ title: "لا يوجد طلاب لمسحهم" });
+      setRemovingAll(false);
+      setRemoveAllCourse(null);
+      return;
     }
 
-    // Remove all course enrollments
-    const { error } = await supabase
-      .from("course_students")
-      .delete()
-      .eq("course_id", removeAllCourse.id);
+    // Permanently delete each student account from the system (auth + all data)
+    let successCount = 0;
+    let failCount = 0;
+    for (const sid of studentIds) {
+      const { error } = await supabase.functions.invoke("delete-student", {
+        body: { user_id: sid },
+      });
+      if (error) {
+        failCount++;
+        console.error("Failed to delete student", sid, error);
+      } else {
+        successCount++;
+      }
+    }
 
-    if (error) {
-      toast({ title: "خطأ", description: error.message, variant: "destructive" });
+    if (failCount > 0) {
+      toast({
+        title: "تم المسح مع وجود أخطاء",
+        description: `تم حذف ${successCount} طالب وفشل حذف ${failCount}`,
+        variant: "destructive",
+      });
     } else {
-      toast({ title: "تم مسح جميع الطلاب من الكورس" });
-      fetchCourses();
+      toast({ title: `تم حذف ${successCount} طالب نهائياً من النظام` });
     }
+    fetchCourses();
     setRemovingAll(false);
     setRemoveAllCourse(null);
   };
