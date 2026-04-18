@@ -472,6 +472,29 @@ export default function AdminCourses() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Confirm remove all students */}
+      <AlertDialog open={!!removeAllCourse} onOpenChange={(open) => !open && setRemoveAllCourse(null)}>
+        <AlertDialogContent dir="rtl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>مسح جميع الطلاب من الكورس</AlertDialogTitle>
+            <AlertDialogDescription>
+              هل أنت متأكد من مسح جميع الطلاب ({removeAllCourse?.student_count}) من كورس "{removeAllCourse?.title}"؟ سيتم أيضاً إلغاء تخصيص محاضرات هذا الكورس عنهم. لا يمكن التراجع عن هذا الإجراء.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={removingAll}>إلغاء</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleRemoveAllStudents}
+              disabled={removingAll}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {removingAll ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : null}
+              مسح الجميع
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
