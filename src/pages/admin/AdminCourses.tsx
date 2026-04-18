@@ -64,6 +64,53 @@ export default function AdminCourses() {
   const [loadingStudents, setLoadingStudents] = useState(false);
   const [savingStudents, setSavingStudents] = useState(false);
 
+  // Remove all students confirmation
+  const [removeAllCourse, setRemoveAllCourse] = useState<Course | null>(null);
+  const [removingAll, setRemovingAll] = useState(false);
+
+  const handleRemoveAllStudents = async () => {
+    if (!removeAllCourse) return;
+    setRemovingAll(true);
+
+    // Get all lectures of this course
+    const { data: courseLectures } = await supabase
+      .from("lectures")
+      .select("id")
+      .eq("course_id", removeAllCourse.id);
+
+    // Get enrolled students of this course
+    const { data: enrollments } = await supabase
+      .from("course_students")
+      .select("student_id")
+      .eq("course_id", removeAllCourse.id);
+    const studentIds = (enrollments || []).map(e => e.student_id);
+
+    // Remove student_lectures for these students for these lectures
+    if (courseLectures && courseLectures.length > 0 && studentIds.length > 0) {
+      const lectureIds = courseLectures.map(l => l.id);
+      await supabase
+        .from("student_lectures")
+        .delete()
+        .in("lecture_id", lectureIds)
+        .in("student_id", studentIds);
+    }
+
+    // Remove all course enrollments
+    const { error } = await supabase
+      .from("course_students")
+      .delete()
+      .eq("course_id", removeAllCourse.id);
+
+    if (error) {
+      toast({ title: "خطأ", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "تم مسح جميع الطلاب من الكورس" });
+      fetchCourses();
+    }
+    setRemovingAll(false);
+    setRemoveAllCourse(null);
+  };
+
   const fetchCourses = async () => {
     setLoading(true);
     const { data: coursesData } = await supabase
