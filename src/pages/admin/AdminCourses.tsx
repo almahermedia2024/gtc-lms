@@ -7,11 +7,12 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, Video, Users, Loader2, Pencil, BookOpen } from "lucide-react";
+import { Plus, Trash2, Video, Users, Loader2, Pencil, BookOpen, UserMinus } from "lucide-react";
 
 interface Course {
   id: string;
@@ -62,6 +63,53 @@ export default function AdminCourses() {
   const [studentItems, setStudentItems] = useState<StudentItem[]>([]);
   const [loadingStudents, setLoadingStudents] = useState(false);
   const [savingStudents, setSavingStudents] = useState(false);
+
+  // Remove all students confirmation
+  const [removeAllCourse, setRemoveAllCourse] = useState<Course | null>(null);
+  const [removingAll, setRemovingAll] = useState(false);
+
+  const handleRemoveAllStudents = async () => {
+    if (!removeAllCourse) return;
+    setRemovingAll(true);
+
+    // Get all lectures of this course
+    const { data: courseLectures } = await supabase
+      .from("lectures")
+      .select("id")
+      .eq("course_id", removeAllCourse.id);
+
+    // Get enrolled students of this course
+    const { data: enrollments } = await supabase
+      .from("course_students")
+      .select("student_id")
+      .eq("course_id", removeAllCourse.id);
+    const studentIds = (enrollments || []).map(e => e.student_id);
+
+    // Remove student_lectures for these students for these lectures
+    if (courseLectures && courseLectures.length > 0 && studentIds.length > 0) {
+      const lectureIds = courseLectures.map(l => l.id);
+      await supabase
+        .from("student_lectures")
+        .delete()
+        .in("lecture_id", lectureIds)
+        .in("student_id", studentIds);
+    }
+
+    // Remove all course enrollments
+    const { error } = await supabase
+      .from("course_students")
+      .delete()
+      .eq("course_id", removeAllCourse.id);
+
+    if (error) {
+      toast({ title: "خطأ", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "تم مسح جميع الطلاب من الكورس" });
+      fetchCourses();
+    }
+    setRemovingAll(false);
+    setRemoveAllCourse(null);
+  };
 
   const fetchCourses = async () => {
     setLoading(true);
@@ -312,6 +360,16 @@ export default function AdminCourses() {
                     <Button size="icon" variant="ghost" onClick={() => { setEditCourse(c); setEditForm({ title: c.title, description: c.description || "" }); setEditOpen(true); }}>
                       <Pencil className="w-4 h-4" />
                     </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="text-destructive"
+                      title="مسح جميع الطلاب من الكورس"
+                      disabled={c.student_count === 0}
+                      onClick={() => setRemoveAllCourse(c)}
+                    >
+                      <UserMinus className="w-4 h-4" />
+                    </Button>
                     <Button size="icon" variant="ghost" className="text-destructive" onClick={() => handleDelete(c.id)}>
                       <Trash2 className="w-4 h-4" />
                     </Button>
@@ -414,6 +472,29 @@ export default function AdminCourses() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Confirm remove all students */}
+      <AlertDialog open={!!removeAllCourse} onOpenChange={(open) => !open && setRemoveAllCourse(null)}>
+        <AlertDialogContent dir="rtl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>مسح جميع الطلاب من الكورس</AlertDialogTitle>
+            <AlertDialogDescription>
+              هل أنت متأكد من مسح جميع الطلاب ({removeAllCourse?.student_count}) من كورس "{removeAllCourse?.title}"؟ سيتم أيضاً إلغاء تخصيص محاضرات هذا الكورس عنهم. لا يمكن التراجع عن هذا الإجراء.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={removingAll}>إلغاء</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleRemoveAllStudents}
+              disabled={removingAll}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {removingAll ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : null}
+              مسح الجميع
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
