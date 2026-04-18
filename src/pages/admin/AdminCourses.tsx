@@ -360,6 +360,16 @@ export default function AdminCourses() {
                     <Button size="icon" variant="ghost" onClick={() => { setEditCourse(c); setEditForm({ title: c.title, description: c.description || "" }); setEditOpen(true); }}>
                       <Pencil className="w-4 h-4" />
                     </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="text-destructive"
+                      title="مسح جميع الطلاب من الكورس"
+                      disabled={c.student_count === 0}
+                      onClick={() => setRemoveAllCourse(c)}
+                    >
+                      <UserMinus className="w-4 h-4" />
+                    </Button>
                     <Button size="icon" variant="ghost" className="text-destructive" onClick={() => handleDelete(c.id)}>
                       <Trash2 className="w-4 h-4" />
                     </Button>
