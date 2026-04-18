@@ -481,9 +481,9 @@ export default function AdminCourses() {
       <AlertDialog open={!!removeAllCourse} onOpenChange={(open) => !open && setRemoveAllCourse(null)}>
         <AlertDialogContent dir="rtl">
           <AlertDialogHeader>
-            <AlertDialogTitle>مسح جميع الطلاب من الكورس</AlertDialogTitle>
+            <AlertDialogTitle>حذف جميع طلاب الكورس نهائياً</AlertDialogTitle>
             <AlertDialogDescription>
-              هل أنت متأكد من مسح جميع الطلاب ({removeAllCourse?.student_count}) من كورس "{removeAllCourse?.title}"؟ سيتم أيضاً إلغاء تخصيص محاضرات هذا الكورس عنهم. لا يمكن التراجع عن هذا الإجراء.
+              ⚠️ تحذير: سيتم حذف جميع الطلاب ({removeAllCourse?.student_count}) المسجلين في كورس "{removeAllCourse?.title}" نهائياً من النظام بالكامل، بما في ذلك حساباتهم وبياناتهم وتقدمهم في جميع الكورسات الأخرى. هذا يسمح بإعادة استخدام بريدهم الإلكتروني لاحقاً. لا يمكن التراجع عن هذا الإجراء.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
