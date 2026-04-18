@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, Video, Users, Loader2, Pencil, BookOpen } from "lucide-react";
+import { Plus, Trash2, Video, Users, Loader2, Pencil, BookOpen, UserMinus } from "lucide-react";
 
 interface Course {
   id: string;
