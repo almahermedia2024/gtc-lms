@@ -94,7 +94,7 @@ function YouTubePlayer({ videoId, title, onProgress }: { videoId: string; title:
   useEffect(() => {
     progressInterval.current = window.setInterval(() => {
       if (playerRef.current && onProgress) onProgress(maxWatchedRef.current, playerRef.current.getDuration() || 0);
-    }, 10000);
+    }, 30000);
     return () => clearInterval(progressInterval.current);
   }, [onProgress]);
 
@@ -205,7 +205,7 @@ function NativePlayer({ src, title, onProgress }: VideoPlayerProps) {
   useEffect(() => {
     progressInterval.current = window.setInterval(() => {
       if (videoRef.current && onProgress) onProgress(maxWatchedRef.current, videoRef.current.duration || 0);
-    }, 10000);
+    }, 30000);
     return () => clearInterval(progressInterval.current);
   }, [onProgress]);
 
