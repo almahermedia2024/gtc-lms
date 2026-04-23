@@ -5,6 +5,7 @@ interface VideoPlayerProps {
   src: string;
   title: string;
   onProgress?: (watchedSeconds: number, totalDuration: number) => void;
+  resumeFrom?: number;
 }
 
 function extractYouTubeId(url: string): string | null {
