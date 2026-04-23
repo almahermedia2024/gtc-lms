@@ -5,6 +5,7 @@ interface VideoPlayerProps {
   src: string;
   title: string;
   onProgress?: (watchedSeconds: number, totalDuration: number) => void;
+  resumeFrom?: number;
 }
 
 function extractYouTubeId(url: string): string | null {
@@ -43,7 +44,7 @@ function formatTime(s: number) {
 }
 
 /* ─── YouTube Player ─── */
-function YouTubePlayer({ videoId, title, onProgress }: { videoId: string; title: string; onProgress?: VideoPlayerProps["onProgress"] }) {
+function YouTubePlayer({ videoId, title, onProgress, resumeFrom }: { videoId: string; title: string; onProgress?: VideoPlayerProps["onProgress"]; resumeFrom?: number }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<any>(null);
   const maxWatchedRef = useRef(0);
@@ -64,7 +65,15 @@ function YouTubePlayer({ videoId, title, onProgress }: { videoId: string; title:
         videoId,
         playerVars: { controls: 0, disablekb: 1, modestbranding: 1, rel: 0, fs: 0, iv_load_policy: 3, playsinline: 1 },
         events: {
-          onReady: () => { playerRef.current = player; setDuration(player.getDuration()); setReady(true); },
+          onReady: () => {
+            playerRef.current = player;
+            setDuration(player.getDuration());
+            if (resumeFrom && resumeFrom > 0) {
+              maxWatchedRef.current = resumeFrom;
+              try { player.seekTo(resumeFrom, true); } catch {}
+            }
+            setReady(true);
+          },
           onStateChange: (e: any) => {
             const YT2 = (window as any).YT;
             setPlaying(e.data === YT2.PlayerState.PLAYING);
@@ -98,8 +107,22 @@ function YouTubePlayer({ videoId, title, onProgress }: { videoId: string; title:
     return () => clearInterval(progressInterval.current);
   }, [onProgress]);
 
-  useEffect(() => () => {
-    if (onProgress && playerRef.current) onProgress(maxWatchedRef.current, playerRef.current.getDuration() || 0);
+  useEffect(() => {
+    const flush = () => {
+      if (onProgress && playerRef.current) {
+        try { onProgress(maxWatchedRef.current, playerRef.current.getDuration() || 0); } catch {}
+      }
+    };
+    const onVis = () => { if (document.visibilityState === "hidden") flush(); };
+    window.addEventListener("beforeunload", flush);
+    window.addEventListener("pagehide", flush);
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      flush();
+      window.removeEventListener("beforeunload", flush);
+      window.removeEventListener("pagehide", flush);
+      document.removeEventListener("visibilitychange", onVis);
+    };
   }, [onProgress]);
 
   const togglePlay = () => {
@@ -157,7 +180,7 @@ function YouTubePlayer({ videoId, title, onProgress }: { videoId: string; title:
 }
 
 /* ─── Native Video Player ─── */
-function NativePlayer({ src, title, onProgress }: VideoPlayerProps) {
+function NativePlayer({ src, title, onProgress, resumeFrom }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [playing, setPlaying] = useState(false);
@@ -219,8 +242,22 @@ function NativePlayer({ src, title, onProgress }: VideoPlayerProps) {
     return () => { v.removeEventListener("contextmenu", preventContext); v.removeEventListener("ratechange", preventRate); };
   }, []);
 
-  useEffect(() => () => {
-    if (onProgress && videoRef.current) onProgress(maxWatchedRef.current, videoRef.current.duration || 0);
+  useEffect(() => {
+    const flush = () => {
+      if (onProgress && videoRef.current) {
+        try { onProgress(maxWatchedRef.current, videoRef.current.duration || 0); } catch {}
+      }
+    };
+    const onVis = () => { if (document.visibilityState === "hidden") flush(); };
+    window.addEventListener("beforeunload", flush);
+    window.addEventListener("pagehide", flush);
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      flush();
+      window.removeEventListener("beforeunload", flush);
+      window.removeEventListener("pagehide", flush);
+      document.removeEventListener("visibilitychange", onVis);
+    };
   }, [onProgress]);
 
   const progressPct = duration ? (currentTime / duration) * 100 : 0;
@@ -229,7 +266,15 @@ function NativePlayer({ src, title, onProgress }: VideoPlayerProps) {
   return (
     <div ref={containerRef} className="relative bg-foreground rounded-lg overflow-hidden select-none group" dir="ltr">
       <video ref={videoRef} src={src} className="w-full aspect-video" onTimeUpdate={handleTimeUpdate} onSeeking={handleSeeking}
-        onLoadedMetadata={() => setDuration(videoRef.current?.duration || 0)} onEnded={() => setPlaying(false)}
+        onLoadedMetadata={() => {
+          const v = videoRef.current;
+          if (!v) return;
+          setDuration(v.duration || 0);
+          if (resumeFrom && resumeFrom > 0 && resumeFrom < (v.duration || Infinity)) {
+            maxWatchedRef.current = resumeFrom;
+            try { v.currentTime = resumeFrom; } catch {}
+          }
+        }} onEnded={() => setPlaying(false)}
         controlsList="nodownload noplaybackrate" disablePictureInPicture playsInline />
       <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3 opacity-0 group-hover:opacity-100 transition-opacity">
         <div className="relative h-1.5 bg-white/20 rounded cursor-pointer mb-3" onClick={handleSeekBar}>
@@ -260,8 +305,8 @@ function NativePlayer({ src, title, onProgress }: VideoPlayerProps) {
 }
 
 /* ─── Main Export ─── */
-export function VideoPlayer({ src, title, onProgress }: VideoPlayerProps) {
+export function VideoPlayer({ src, title, onProgress, resumeFrom }: VideoPlayerProps) {
   const youtubeId = extractYouTubeId(src);
-  if (youtubeId) return <YouTubePlayer videoId={youtubeId} title={title} onProgress={onProgress} />;
-  return <NativePlayer src={src} title={title} onProgress={onProgress} />;
+  if (youtubeId) return <YouTubePlayer videoId={youtubeId} title={title} onProgress={onProgress} resumeFrom={resumeFrom} />;
+  return <NativePlayer src={src} title={title} onProgress={onProgress} resumeFrom={resumeFrom} />;
 }
