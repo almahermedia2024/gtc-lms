@@ -107,8 +107,22 @@ function YouTubePlayer({ videoId, title, onProgress, resumeFrom }: { videoId: st
     return () => clearInterval(progressInterval.current);
   }, [onProgress]);
 
-  useEffect(() => () => {
-    if (onProgress && playerRef.current) onProgress(maxWatchedRef.current, playerRef.current.getDuration() || 0);
+  useEffect(() => {
+    const flush = () => {
+      if (onProgress && playerRef.current) {
+        try { onProgress(maxWatchedRef.current, playerRef.current.getDuration() || 0); } catch {}
+      }
+    };
+    const onVis = () => { if (document.visibilityState === "hidden") flush(); };
+    window.addEventListener("beforeunload", flush);
+    window.addEventListener("pagehide", flush);
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      flush();
+      window.removeEventListener("beforeunload", flush);
+      window.removeEventListener("pagehide", flush);
+      document.removeEventListener("visibilitychange", onVis);
+    };
   }, [onProgress]);
 
   const togglePlay = () => {
