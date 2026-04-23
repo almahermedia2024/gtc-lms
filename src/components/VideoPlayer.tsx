@@ -65,7 +65,15 @@ function YouTubePlayer({ videoId, title, onProgress, resumeFrom }: { videoId: st
         videoId,
         playerVars: { controls: 0, disablekb: 1, modestbranding: 1, rel: 0, fs: 0, iv_load_policy: 3, playsinline: 1 },
         events: {
-          onReady: () => { playerRef.current = player; setDuration(player.getDuration()); setReady(true); },
+          onReady: () => {
+            playerRef.current = player;
+            setDuration(player.getDuration());
+            if (resumeFrom && resumeFrom > 0) {
+              maxWatchedRef.current = resumeFrom;
+              try { player.seekTo(resumeFrom, true); } catch {}
+            }
+            setReady(true);
+          },
           onStateChange: (e: any) => {
             const YT2 = (window as any).YT;
             setPlaying(e.data === YT2.PlayerState.PLAYING);
