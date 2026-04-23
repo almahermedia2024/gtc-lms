@@ -288,10 +288,10 @@ export default function StudentQuiz() {
       </button>
 
       {stage === "locked" && (
-        <Card className="border-amber-500/30 bg-amber-500/5">
+        <Card className="border-secondary/30 bg-secondary/5">
           <CardContent className="pt-8 pb-8 text-center">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-amber-500/10 flex items-center justify-center">
-              <Lock className="w-8 h-8 text-amber-500" />
+            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-secondary/10 flex items-center justify-center">
+              <Lock className="w-8 h-8 text-secondary" />
             </div>
             <h2 className="text-xl font-heading font-bold mb-2">الاختبار مغلق</h2>
             <p className="text-muted-foreground mb-4">
