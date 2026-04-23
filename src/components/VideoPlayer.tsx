@@ -166,7 +166,7 @@ function YouTubePlayer({ videoId, title, onProgress, resumeFrom }: { videoId: st
 }
 
 /* ─── Native Video Player ─── */
-function NativePlayer({ src, title, onProgress }: VideoPlayerProps) {
+function NativePlayer({ src, title, onProgress, resumeFrom }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [playing, setPlaying] = useState(false);
