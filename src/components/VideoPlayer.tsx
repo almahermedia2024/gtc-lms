@@ -44,7 +44,7 @@ function formatTime(s: number) {
 }
 
 /* ─── YouTube Player ─── */
-function YouTubePlayer({ videoId, title, onProgress }: { videoId: string; title: string; onProgress?: VideoPlayerProps["onProgress"] }) {
+function YouTubePlayer({ videoId, title, onProgress, resumeFrom }: { videoId: string; title: string; onProgress?: VideoPlayerProps["onProgress"]; resumeFrom?: number }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<any>(null);
   const maxWatchedRef = useRef(0);
