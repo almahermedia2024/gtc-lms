@@ -238,7 +238,15 @@ function NativePlayer({ src, title, onProgress, resumeFrom }: VideoPlayerProps) 
   return (
     <div ref={containerRef} className="relative bg-foreground rounded-lg overflow-hidden select-none group" dir="ltr">
       <video ref={videoRef} src={src} className="w-full aspect-video" onTimeUpdate={handleTimeUpdate} onSeeking={handleSeeking}
-        onLoadedMetadata={() => setDuration(videoRef.current?.duration || 0)} onEnded={() => setPlaying(false)}
+        onLoadedMetadata={() => {
+          const v = videoRef.current;
+          if (!v) return;
+          setDuration(v.duration || 0);
+          if (resumeFrom && resumeFrom > 0 && resumeFrom < (v.duration || Infinity)) {
+            maxWatchedRef.current = resumeFrom;
+            try { v.currentTime = resumeFrom; } catch {}
+          }
+        }} onEnded={() => setPlaying(false)}
         controlsList="nodownload noplaybackrate" disablePictureInPicture playsInline />
       <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3 opacity-0 group-hover:opacity-100 transition-opacity">
         <div className="relative h-1.5 bg-white/20 rounded cursor-pointer mb-3" onClick={handleSeekBar}>
