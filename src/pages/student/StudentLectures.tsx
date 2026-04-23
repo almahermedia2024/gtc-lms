@@ -283,7 +283,8 @@ export default function StudentLectures() {
                 ))}
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
