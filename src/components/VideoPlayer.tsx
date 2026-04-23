@@ -242,8 +242,22 @@ function NativePlayer({ src, title, onProgress, resumeFrom }: VideoPlayerProps) 
     return () => { v.removeEventListener("contextmenu", preventContext); v.removeEventListener("ratechange", preventRate); };
   }, []);
 
-  useEffect(() => () => {
-    if (onProgress && videoRef.current) onProgress(maxWatchedRef.current, videoRef.current.duration || 0);
+  useEffect(() => {
+    const flush = () => {
+      if (onProgress && videoRef.current) {
+        try { onProgress(maxWatchedRef.current, videoRef.current.duration || 0); } catch {}
+      }
+    };
+    const onVis = () => { if (document.visibilityState === "hidden") flush(); };
+    window.addEventListener("beforeunload", flush);
+    window.addEventListener("pagehide", flush);
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      flush();
+      window.removeEventListener("beforeunload", flush);
+      window.removeEventListener("pagehide", flush);
+      document.removeEventListener("visibilitychange", onVis);
+    };
   }, [onProgress]);
 
   const progressPct = duration ? (currentTime / duration) * 100 : 0;
