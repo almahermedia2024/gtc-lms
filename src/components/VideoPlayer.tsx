@@ -277,8 +277,8 @@ function NativePlayer({ src, title, onProgress, resumeFrom }: VideoPlayerProps) 
 }
 
 /* ─── Main Export ─── */
-export function VideoPlayer({ src, title, onProgress }: VideoPlayerProps) {
+export function VideoPlayer({ src, title, onProgress, resumeFrom }: VideoPlayerProps) {
   const youtubeId = extractYouTubeId(src);
-  if (youtubeId) return <YouTubePlayer videoId={youtubeId} title={title} onProgress={onProgress} />;
-  return <NativePlayer src={src} title={title} onProgress={onProgress} />;
+  if (youtubeId) return <YouTubePlayer videoId={youtubeId} title={title} onProgress={onProgress} resumeFrom={resumeFrom} />;
+  return <NativePlayer src={src} title={title} onProgress={onProgress} resumeFrom={resumeFrom} />;
 }
