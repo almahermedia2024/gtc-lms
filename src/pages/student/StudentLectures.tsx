@@ -152,7 +152,7 @@ export default function StudentLectures() {
         </button>
         <h2 className="text-xl font-heading font-bold mb-4">{selected.title}</h2>
         {selected.description && <p className="text-muted-foreground mb-4">{selected.description}</p>}
-        <VideoPlayer src={selected.video_url} title={selected.title} onProgress={handleProgress} />
+        <VideoPlayer src={selected.video_url} title={selected.title} onProgress={handleProgress} resumeFrom={selected.watched_seconds} />
       </div>
     );
   }
