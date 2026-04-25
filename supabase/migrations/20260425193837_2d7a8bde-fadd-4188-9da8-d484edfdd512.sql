@@ -1,0 +1,1 @@
+ALTER TABLE public.courses ADD COLUMN IF NOT EXISTS quiz_duration_minutes integer NOT NULL DEFAULT 30;

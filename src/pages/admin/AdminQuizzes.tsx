@@ -42,11 +42,14 @@ import {
   CheckCircle2,
   XCircle,
   BookOpen,
+  Timer,
+  Save,
 } from "lucide-react";
 
 interface Course {
   id: string;
   title: string;
+  quiz_duration_minutes: number;
 }
 
 interface QuizOption {
@@ -90,12 +93,16 @@ export default function AdminQuizzes() {
   const [deleteQuestion, setDeleteQuestion] = useState<Question | null>(null);
   const [deleting, setDeleting] = useState(false);
 
+  // Quiz duration
+  const [durationInput, setDurationInput] = useState<string>("30");
+  const [savingDuration, setSavingDuration] = useState(false);
+
   useEffect(() => {
     const loadCourses = async () => {
       setLoading(true);
       const { data, error } = await supabase
         .from("courses")
-        .select("id, title")
+        .select("id, title, quiz_duration_minutes")
         .order("created_at", { ascending: false });
       if (error) {
         toast({ title: "خطأ في تحميل الكورسات", description: error.message, variant: "destructive" });
@@ -112,8 +119,35 @@ export default function AdminQuizzes() {
   }, []);
 
   useEffect(() => {
-    if (selectedCourseId) loadQuestions(selectedCourseId);
-  }, [selectedCourseId]);
+    if (selectedCourseId) {
+      loadQuestions(selectedCourseId);
+      const c = courses.find((x) => x.id === selectedCourseId);
+      setDurationInput(String(c?.quiz_duration_minutes ?? 30));
+    }
+  }, [selectedCourseId, courses]);
+
+  const handleSaveDuration = async () => {
+    if (!selectedCourseId) return;
+    const minutes = parseInt(durationInput, 10);
+    if (isNaN(minutes) || minutes < 1 || minutes > 600) {
+      toast({ title: "أدخل مدة صحيحة بين 1 و 600 دقيقة", variant: "destructive" });
+      return;
+    }
+    setSavingDuration(true);
+    const { error } = await supabase
+      .from("courses")
+      .update({ quiz_duration_minutes: minutes })
+      .eq("id", selectedCourseId);
+    if (error) {
+      toast({ title: "خطأ في حفظ المدة", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "تم حفظ مدة الاختبار" });
+      setCourses((prev) =>
+        prev.map((c) => (c.id === selectedCourseId ? { ...c, quiz_duration_minutes: minutes } : c))
+      );
+    }
+    setSavingDuration(false);
+  };
 
   const loadQuestions = async (courseId: string) => {
     setLoadingQuestions(true);
@@ -365,6 +399,45 @@ export default function AdminQuizzes() {
           )}
         </CardContent>
       </Card>
+
+      {selectedCourseId && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Timer className="w-4 h-4 text-primary" />
+              مدة الاختبار
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-end gap-3 flex-wrap">
+              <div className="flex-1 min-w-[200px]">
+                <Label htmlFor="quiz-duration">المدة بالدقائق</Label>
+                <Input
+                  id="quiz-duration"
+                  type="number"
+                  min={1}
+                  max={600}
+                  value={durationInput}
+                  onChange={(e) => setDurationInput(e.target.value)}
+                  placeholder="مثال: 30"
+                />
+              </div>
+              <Button onClick={handleSaveDuration} disabled={savingDuration}>
+                {savingDuration ? (
+                  <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Save className="ml-2 h-4 w-4" />
+                )}
+                حفظ المدة
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              يبدأ العدّ التنازلي عند ضغط الطالب على زر "بدء الاختبار". عند انتهاء الوقت تُحفظ
+              الإجابات الحالية تلقائياً.
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       {selectedCourseId && (
         <Card>

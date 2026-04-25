@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -17,6 +17,7 @@ import {
   ArrowRight,
   Trophy,
   AlertCircle,
+  Timer,
 } from "lucide-react";
 
 interface QuestionWithOptions {
@@ -28,6 +29,7 @@ interface QuestionWithOptions {
 interface CourseInfo {
   id: string;
   title: string;
+  quiz_duration_minutes: number;
 }
 
 type Stage = "loading" | "locked" | "intro" | "in_progress" | "submitted" | "no_quiz";
@@ -47,6 +49,7 @@ export default function StudentQuiz() {
     correct: number;
     total: number;
     percentage: number;
+    autoSubmitted?: boolean;
   } | null>(null);
   const [progressInfo, setProgressInfo] = useState<{
     completed: number;
@@ -57,6 +60,14 @@ export default function StudentQuiz() {
     total_questions: number;
     percentage: number;
   } | null>(null);
+
+  // Timer
+  const [timeLeft, setTimeLeft] = useState<number>(0); // seconds
+  const answersRef = useRef<Record<string, string>>({});
+  const submittedRef = useRef(false);
+  useEffect(() => {
+    answersRef.current = answers;
+  }, [answers]);
 
   useEffect(() => {
     if (!courseId || !user) return;
@@ -71,7 +82,7 @@ export default function StudentQuiz() {
     // Load course
     const { data: courseData } = await supabase
       .from("courses")
-      .select("id, title")
+      .select("id, title, quiz_duration_minutes")
       .eq("id", courseId)
       .maybeSingle();
 
@@ -191,34 +202,44 @@ export default function StudentQuiz() {
 
   const handleStart = () => {
     setAnswers({});
+    answersRef.current = {};
+    submittedRef.current = false;
+    const minutes = course?.quiz_duration_minutes ?? 30;
+    setTimeLeft(minutes * 60);
     setStage("in_progress");
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (auto = false) => {
     if (!user || !courseId) return;
+    if (submittedRef.current) return;
 
-    // Validate all answered
-    const unanswered = questions.filter((q) => !answers[q.id]);
-    if (unanswered.length > 0) {
-      toast({
-        title: `هناك ${unanswered.length} سؤال بدون إجابة`,
-        variant: "destructive",
-      });
-      return;
+    const currentAnswers = auto ? answersRef.current : answers;
+
+    // Validate only on manual submit
+    if (!auto) {
+      const unanswered = questions.filter((q) => !currentAnswers[q.id]);
+      if (unanswered.length > 0) {
+        toast({
+          title: `هناك ${unanswered.length} سؤال بدون إجابة`,
+          variant: "destructive",
+        });
+        return;
+      }
     }
 
+    submittedRef.current = true;
     setSubmitting(true);
 
     let correctCount = 0;
     const answerRows: {
       question_id: string;
-      selected_option_id: string;
+      selected_option_id: string | null;
       is_correct: boolean;
     }[] = [];
 
     questions.forEach((q) => {
-      const selectedId = answers[q.id];
-      const selected = q.options.find((o) => o.id === selectedId);
+      const selectedId = currentAnswers[q.id] || null;
+      const selected = selectedId ? q.options.find((o) => o.id === selectedId) : undefined;
       const isCorrect = !!selected?.is_correct;
       if (isCorrect) correctCount++;
       answerRows.push({
@@ -252,6 +273,7 @@ export default function StudentQuiz() {
         description: attErr?.message,
         variant: "destructive",
       });
+      submittedRef.current = false;
       setSubmitting(false);
       return;
     }
@@ -264,9 +286,43 @@ export default function StudentQuiz() {
       }))
     );
 
-    setResult({ correct: correctCount, total, percentage: pct });
+    if (auto) {
+      toast({
+        title: "انتهى الوقت",
+        description: "تم حفظ إجاباتك تلقائياً.",
+      });
+    }
+
+    setResult({ correct: correctCount, total, percentage: pct, autoSubmitted: auto });
     setStage("submitted");
     setSubmitting(false);
+  };
+
+  // Countdown timer
+  useEffect(() => {
+    if (stage !== "in_progress") return;
+    if (timeLeft <= 0) {
+      void handleSubmit(true);
+      return;
+    }
+    const t = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(t);
+          void handleSubmit(true);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stage]);
+
+  const formatTime = (s: number) => {
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return `${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
   };
 
   if (stage === "loading") {
@@ -333,7 +389,7 @@ export default function StudentQuiz() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <div className="p-4 rounded-lg bg-muted/50 text-center">
                 <p className="text-2xl font-bold font-heading text-primary">{questions.length}</p>
                 <p className="text-sm text-muted-foreground">سؤال</p>
@@ -341,6 +397,13 @@ export default function StudentQuiz() {
               <div className="p-4 rounded-lg bg-muted/50 text-center">
                 <p className="text-2xl font-bold font-heading text-accent">MCQ</p>
                 <p className="text-sm text-muted-foreground">اختيار من متعدد</p>
+              </div>
+              <div className="p-4 rounded-lg bg-muted/50 text-center">
+                <p className="text-2xl font-bold font-heading text-secondary flex items-center justify-center gap-1">
+                  <Timer className="w-5 h-5" />
+                  {course.quiz_duration_minutes}
+                </p>
+                <p className="text-sm text-muted-foreground">دقيقة</p>
               </div>
             </div>
 
@@ -356,8 +419,9 @@ export default function StudentQuiz() {
 
             <div className="text-sm text-muted-foreground space-y-1">
               <p>• اقرأ كل سؤال جيداً قبل الإجابة</p>
-              <p>• يجب الإجابة على جميع الأسئلة قبل الإرسال</p>
-              <p>• يمكنك إعادة المحاولة لاحقاً</p>
+              <p>• مدة الاختبار {course.quiz_duration_minutes} دقيقة، يبدأ العد التنازلي عند الضغط على "بدء الاختبار"</p>
+              <p>• عند انتهاء الوقت تُحفظ إجاباتك تلقائياً وتظهر النتيجة</p>
+              <p>• يمكنك الضغط على "إنهاء الاختبار" قبل انتهاء الوقت لعرض النتيجة</p>
             </div>
 
             <Button onClick={handleStart} className="w-full" size="lg">
@@ -370,14 +434,25 @@ export default function StudentQuiz() {
       {stage === "in_progress" && (
         <div className="space-y-4">
           <Card className="sticky top-4 z-10 backdrop-blur-sm bg-background/80">
-            <CardContent className="py-3 flex items-center justify-between">
+            <CardContent className="py-3 flex items-center justify-between gap-3 flex-wrap">
               <span className="text-sm font-medium">
                 تم الإجابة:{" "}
                 <span className="text-primary font-bold">
                   {Object.keys(answers).length} / {questions.length}
                 </span>
               </span>
-              <Badge variant="outline">{course?.title}</Badge>
+              <div
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-md font-mono font-bold text-base ${
+                  timeLeft <= 60
+                    ? "bg-destructive/10 text-destructive animate-pulse"
+                    : timeLeft <= 300
+                      ? "bg-secondary/15 text-secondary"
+                      : "bg-primary/10 text-primary"
+                }`}
+              >
+                <Timer className="w-4 h-4" />
+                {formatTime(timeLeft)}
+              </div>
             </CardContent>
           </Card>
 
@@ -422,13 +497,13 @@ export default function StudentQuiz() {
           <Card>
             <CardContent className="py-4">
               <Button
-                onClick={handleSubmit}
+                onClick={() => handleSubmit(false)}
                 disabled={submitting}
                 className="w-full"
                 size="lg"
               >
                 {submitting && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
-                إرسال الإجابات
+                إنهاء الاختبار وعرض النتيجة
               </Button>
             </CardContent>
           </Card>
@@ -454,7 +529,14 @@ export default function StudentQuiz() {
             <h2 className="text-2xl font-heading font-bold mb-2">
               {result.percentage >= 50 ? "أحسنت!" : "حاول مرة أخرى"}
             </h2>
-            <p className="text-muted-foreground mb-6">نتيجتك في الاختبار</p>
+            {result.autoSubmitted ? (
+              <div className="mb-6 p-3 rounded-lg bg-secondary/10 border border-secondary/30 text-sm flex items-center justify-center gap-2">
+                <Timer className="w-4 h-4 text-secondary" />
+                <span>انتهى الوقت، تم حفظ إجاباتك تلقائياً.</span>
+              </div>
+            ) : (
+              <p className="text-muted-foreground mb-6">نتيجتك في الاختبار</p>
+            )}
 
             <div className="grid grid-cols-3 gap-4 mb-6">
               <div className="p-4 rounded-lg bg-muted/50">
