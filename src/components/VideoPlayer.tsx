@@ -73,7 +73,7 @@ function YouTubePlayer({ videoId, title, onProgress, resumeFrom }: { videoId: st
           iv_load_policy: 3,
           playsinline: 1,
           origin: window.location.origin,
-ервен          enablejsapi: 1,
+          enablejsapi: 1,
         },
         events: {
           onReady: () => {
