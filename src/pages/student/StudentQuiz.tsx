@@ -247,47 +247,21 @@ export default function StudentQuiz() {
     submittedRef.current = true;
     setSubmitting(true);
 
-    let correctCount = 0;
-    const answerRows: {
-      question_id: string;
-      selected_option_id: string | null;
-      is_correct: boolean;
-    }[] = [];
+    // Build payload — scoring happens server-side via SECURITY DEFINER fn
+    const answersPayload = questions.map((q) => ({
+      question_id: q.id,
+      selected_option_id: currentAnswers[q.id] || null,
+    }));
 
-    questions.forEach((q) => {
-      const selectedId = currentAnswers[q.id] || null;
-      const selected = selectedId ? q.options.find((o) => o.id === selectedId) : undefined;
-      const isCorrect = !!selected?.is_correct;
-      if (isCorrect) correctCount++;
-      answerRows.push({
-        question_id: q.id,
-        selected_option_id: selectedId,
-        is_correct: isCorrect,
-      });
+    const { data: rpcData, error: rpcErr } = await supabase.rpc("submit_quiz_attempt", {
+      _course_id: courseId,
+      _answers: answersPayload,
     });
 
-    const total = questions.length;
-    const pct = total > 0 ? (correctCount / total) * 100 : 0;
-
-    // Create attempt
-    const { data: attempt, error: attErr } = await supabase
-      .from("quiz_attempts")
-      .insert({
-        student_id: user.id,
-        course_id: courseId,
-        total_questions: total,
-        correct_answers: correctCount,
-        score: correctCount,
-        percentage: pct,
-        completed_at: new Date().toISOString(),
-      })
-      .select()
-      .single();
-
-    if (attErr || !attempt) {
+    if (rpcErr || !rpcData || rpcData.length === 0) {
       toast({
         title: "خطأ في حفظ المحاولة",
-        description: attErr?.message,
+        description: rpcErr?.message,
         variant: "destructive",
       });
       submittedRef.current = false;
@@ -295,13 +269,30 @@ export default function StudentQuiz() {
       return;
     }
 
-    // Insert answers
-    await supabase.from("quiz_answers").insert(
-      answerRows.map((a) => ({
-        attempt_id: attempt.id,
-        ...a,
-      }))
-    );
+    const row = rpcData[0];
+    const correctCount = row.correct_answers;
+    const total = row.total_questions;
+    const pct = row.percentage;
+
+    // Fetch verified review (correct answers exposed only after submission)
+    const { data: reviewData } = await supabase.rpc("get_quiz_review", {
+      _attempt_id: row.attempt_id,
+    });
+
+    const reviewItems: ReviewItem[] = (reviewData || []).map((r) => {
+      const q = questions.find((qq) => qq.id === r.question_id);
+      const selectedOpt = q?.options.find((o) => o.id === r.selected_option_id);
+      return {
+        question_id: r.question_id,
+        question_text: r.question_text,
+        selected_option_id: r.selected_option_id,
+        selected_option_text: selectedOpt?.option_text ?? "",
+        is_correct: r.is_correct,
+        correct_option_id: r.correct_option_id,
+        correct_option_text: r.correct_option_text,
+      };
+    });
+    setReview(reviewItems);
 
     if (auto) {
       toast({
