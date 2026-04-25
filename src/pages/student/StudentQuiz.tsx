@@ -73,7 +73,7 @@ export default function StudentQuiz() {
     // Load course
     const { data: courseData } = await supabase
       .from("courses")
-      .select("id, title")
+      .select("id, title, quiz_duration_minutes")
       .eq("id", courseId)
       .maybeSingle();
 
