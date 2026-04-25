@@ -70,6 +70,7 @@ export default function StudentQuiz() {
     total_questions: number;
     percentage: number;
   } | null>(null);
+  const [review, setReview] = useState<ReviewItem[]>([]);
 
   // Timer
   const [timeLeft, setTimeLeft] = useState<number>(0); // seconds
