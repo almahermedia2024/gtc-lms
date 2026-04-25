@@ -42,11 +42,14 @@ import {
   CheckCircle2,
   XCircle,
   BookOpen,
+  Timer,
+  Save,
 } from "lucide-react";
 
 interface Course {
   id: string;
   title: string;
+  quiz_duration_minutes: number;
 }
 
 interface QuizOption {
