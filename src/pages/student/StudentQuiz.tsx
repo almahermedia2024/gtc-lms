@@ -202,34 +202,44 @@ export default function StudentQuiz() {
 
   const handleStart = () => {
     setAnswers({});
+    answersRef.current = {};
+    submittedRef.current = false;
+    const minutes = course?.quiz_duration_minutes ?? 30;
+    setTimeLeft(minutes * 60);
     setStage("in_progress");
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (auto = false) => {
     if (!user || !courseId) return;
+    if (submittedRef.current) return;
 
-    // Validate all answered
-    const unanswered = questions.filter((q) => !answers[q.id]);
-    if (unanswered.length > 0) {
-      toast({
-        title: `هناك ${unanswered.length} سؤال بدون إجابة`,
-        variant: "destructive",
-      });
-      return;
+    const currentAnswers = auto ? answersRef.current : answers;
+
+    // Validate only on manual submit
+    if (!auto) {
+      const unanswered = questions.filter((q) => !currentAnswers[q.id]);
+      if (unanswered.length > 0) {
+        toast({
+          title: `هناك ${unanswered.length} سؤال بدون إجابة`,
+          variant: "destructive",
+        });
+        return;
+      }
     }
 
+    submittedRef.current = true;
     setSubmitting(true);
 
     let correctCount = 0;
     const answerRows: {
       question_id: string;
-      selected_option_id: string;
+      selected_option_id: string | null;
       is_correct: boolean;
     }[] = [];
 
     questions.forEach((q) => {
-      const selectedId = answers[q.id];
-      const selected = q.options.find((o) => o.id === selectedId);
+      const selectedId = currentAnswers[q.id] || null;
+      const selected = selectedId ? q.options.find((o) => o.id === selectedId) : undefined;
       const isCorrect = !!selected?.is_correct;
       if (isCorrect) correctCount++;
       answerRows.push({
@@ -263,6 +273,7 @@ export default function StudentQuiz() {
         description: attErr?.message,
         variant: "destructive",
       });
+      submittedRef.current = false;
       setSubmitting(false);
       return;
     }
@@ -275,9 +286,43 @@ export default function StudentQuiz() {
       }))
     );
 
-    setResult({ correct: correctCount, total, percentage: pct });
+    if (auto) {
+      toast({
+        title: "انتهى الوقت",
+        description: "تم حفظ إجاباتك تلقائياً.",
+      });
+    }
+
+    setResult({ correct: correctCount, total, percentage: pct, autoSubmitted: auto });
     setStage("submitted");
     setSubmitting(false);
+  };
+
+  // Countdown timer
+  useEffect(() => {
+    if (stage !== "in_progress") return;
+    if (timeLeft <= 0) {
+      void handleSubmit(true);
+      return;
+    }
+    const t = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(t);
+          void handleSubmit(true);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stage]);
+
+  const formatTime = (s: number) => {
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return `${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
   };
 
   if (stage === "loading") {
