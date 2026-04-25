@@ -403,6 +403,45 @@ export default function AdminQuizzes() {
       {selectedCourseId && (
         <Card>
           <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Timer className="w-4 h-4 text-primary" />
+              مدة الاختبار
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-end gap-3 flex-wrap">
+              <div className="flex-1 min-w-[200px]">
+                <Label htmlFor="quiz-duration">المدة بالدقائق</Label>
+                <Input
+                  id="quiz-duration"
+                  type="number"
+                  min={1}
+                  max={600}
+                  value={durationInput}
+                  onChange={(e) => setDurationInput(e.target.value)}
+                  placeholder="مثال: 30"
+                />
+              </div>
+              <Button onClick={handleSaveDuration} disabled={savingDuration}>
+                {savingDuration ? (
+                  <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Save className="ml-2 h-4 w-4" />
+                )}
+                حفظ المدة
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              يبدأ العدّ التنازلي عند ضغط الطالب على زر "بدء الاختبار". عند انتهاء الوقت تُحفظ
+              الإجابات الحالية تلقائياً.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {selectedCourseId && (
+        <Card>
+          <CardHeader>
             <CardTitle className="text-base flex items-center justify-between">
               <span>أسئلة الاختبار</span>
               <Badge variant="secondary">{questions.length} سؤال</Badge>
