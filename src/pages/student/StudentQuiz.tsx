@@ -49,6 +49,7 @@ export default function StudentQuiz() {
     correct: number;
     total: number;
     percentage: number;
+    autoSubmitted?: boolean;
   } | null>(null);
   const [progressInfo, setProgressInfo] = useState<{
     completed: number;
@@ -59,6 +60,14 @@ export default function StudentQuiz() {
     total_questions: number;
     percentage: number;
   } | null>(null);
+
+  // Timer
+  const [timeLeft, setTimeLeft] = useState<number>(0); // seconds
+  const answersRef = useRef<Record<string, string>>({});
+  const submittedRef = useRef(false);
+  useEffect(() => {
+    answersRef.current = answers;
+  }, [answers]);
 
   useEffect(() => {
     if (!courseId || !user) return;
