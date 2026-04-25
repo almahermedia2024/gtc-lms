@@ -164,7 +164,6 @@ export default function StudentQuiz() {
       return;
     }
 
-    const ids = qs.map((q) => q.id);
     // Use security-definer RPC so students NEVER receive `is_correct`
     const { data: opts, error: optsErr } = await supabase.rpc(
       "get_quiz_options_for_student",
@@ -193,9 +192,6 @@ export default function StudentQuiz() {
         options: optsByQ.get(q.id) || [],
       }))
     );
-
-    void ids;
-
     // Check previous attempt
     const { data: attempts } = await supabase
       .from("quiz_attempts")
