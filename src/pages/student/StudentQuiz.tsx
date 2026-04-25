@@ -389,7 +389,7 @@ export default function StudentQuiz() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <div className="p-4 rounded-lg bg-muted/50 text-center">
                 <p className="text-2xl font-bold font-heading text-primary">{questions.length}</p>
                 <p className="text-sm text-muted-foreground">سؤال</p>
@@ -397,6 +397,13 @@ export default function StudentQuiz() {
               <div className="p-4 rounded-lg bg-muted/50 text-center">
                 <p className="text-2xl font-bold font-heading text-accent">MCQ</p>
                 <p className="text-sm text-muted-foreground">اختيار من متعدد</p>
+              </div>
+              <div className="p-4 rounded-lg bg-muted/50 text-center">
+                <p className="text-2xl font-bold font-heading text-secondary flex items-center justify-center gap-1">
+                  <Timer className="w-5 h-5" />
+                  {course.quiz_duration_minutes}
+                </p>
+                <p className="text-sm text-muted-foreground">دقيقة</p>
               </div>
             </div>
 
@@ -412,8 +419,9 @@ export default function StudentQuiz() {
 
             <div className="text-sm text-muted-foreground space-y-1">
               <p>• اقرأ كل سؤال جيداً قبل الإجابة</p>
-              <p>• يجب الإجابة على جميع الأسئلة قبل الإرسال</p>
-              <p>• يمكنك إعادة المحاولة لاحقاً</p>
+              <p>• مدة الاختبار {course.quiz_duration_minutes} دقيقة، يبدأ العد التنازلي عند الضغط على "بدء الاختبار"</p>
+              <p>• عند انتهاء الوقت تُحفظ إجاباتك تلقائياً وتظهر النتيجة</p>
+              <p>• يمكنك الضغط على "إنهاء الاختبار" قبل انتهاء الوقت لعرض النتيجة</p>
             </div>
 
             <Button onClick={handleStart} className="w-full" size="lg">
