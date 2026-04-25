@@ -23,7 +23,17 @@ import {
 interface QuestionWithOptions {
   id: string;
   question_text: string;
-  options: { id: string; option_text: string; is_correct: boolean }[];
+  options: { id: string; option_text: string }[];
+}
+
+interface ReviewItem {
+  question_id: string;
+  question_text: string;
+  selected_option_id: string | null;
+  selected_option_text: string;
+  is_correct: boolean;
+  correct_option_id: string | null;
+  correct_option_text: string | null;
 }
 
 interface CourseInfo {
