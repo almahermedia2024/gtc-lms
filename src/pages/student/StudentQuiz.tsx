@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -17,6 +17,7 @@ import {
   ArrowRight,
   Trophy,
   AlertCircle,
+  Timer,
 } from "lucide-react";
 
 interface QuestionWithOptions {
