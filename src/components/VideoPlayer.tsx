@@ -63,7 +63,18 @@ function YouTubePlayer({ videoId, title, onProgress, resumeFrom }: { videoId: st
       const YT = (window as any).YT;
       player = new YT.Player(`yt-player-${videoId}`, {
         videoId,
-        playerVars: { controls: 0, disablekb: 1, modestbranding: 1, rel: 0, fs: 0, iv_load_policy: 3, playsinline: 1 },
+        host: "https://www.youtube-nocookie.com",
+        playerVars: {
+          controls: 0,
+          disablekb: 1,
+          modestbranding: 1,
+          rel: 0,
+          fs: 0,
+          iv_load_policy: 3,
+          playsinline: 1,
+          origin: window.location.origin,
+ервен          enablejsapi: 1,
+        },
         events: {
           onReady: () => {
             playerRef.current = player;
