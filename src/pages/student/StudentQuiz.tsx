@@ -565,16 +565,13 @@ export default function StudentQuiz() {
               </div>
             </div>
 
-            {/* Review answers */}
+            {/* Review answers — correctness comes from server, not client */}
             <div className="space-y-3 text-right mb-6">
-              {questions.map((q, idx) => {
-                const selectedId = answers[q.id];
-                const selected = q.options.find((o) => o.id === selectedId);
-                const correct = q.options.find((o) => o.is_correct);
-                const isCorrect = !!selected?.is_correct;
+              {review.map((r, idx) => {
+                const isCorrect = r.is_correct;
                 return (
                   <div
-                    key={q.id}
+                    key={r.question_id}
                     className={`p-3 rounded-lg border ${
                       isCorrect
                         ? "border-accent/30 bg-accent/5"
@@ -588,20 +585,20 @@ export default function StudentQuiz() {
                         <XCircle className="w-4 h-4 text-destructive shrink-0 mt-1" />
                       )}
                       <p className="text-sm font-medium">
-                        {idx + 1}. {q.question_text}
+                        {idx + 1}. {r.question_text}
                       </p>
                     </div>
                     <div className="text-xs space-y-1 pr-6">
                       <p>
                         إجابتك:{" "}
                         <span className={isCorrect ? "text-accent" : "text-destructive"}>
-                          {selected?.option_text || "—"}
+                          {r.selected_option_text || "—"}
                         </span>
                       </p>
-                      {!isCorrect && correct && (
+                      {!isCorrect && r.correct_option_text && (
                         <p>
                           الإجابة الصحيحة:{" "}
-                          <span className="text-accent">{correct.option_text}</span>
+                          <span className="text-accent">{r.correct_option_text}</span>
                         </p>
                       )}
                     </div>
