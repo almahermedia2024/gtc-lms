@@ -119,8 +119,35 @@ export default function AdminQuizzes() {
   }, []);
 
   useEffect(() => {
-    if (selectedCourseId) loadQuestions(selectedCourseId);
-  }, [selectedCourseId]);
+    if (selectedCourseId) {
+      loadQuestions(selectedCourseId);
+      const c = courses.find((x) => x.id === selectedCourseId);
+      setDurationInput(String(c?.quiz_duration_minutes ?? 30));
+    }
+  }, [selectedCourseId, courses]);
+
+  const handleSaveDuration = async () => {
+    if (!selectedCourseId) return;
+    const minutes = parseInt(durationInput, 10);
+    if (isNaN(minutes) || minutes < 1 || minutes > 600) {
+      toast({ title: "أدخل مدة صحيحة بين 1 و 600 دقيقة", variant: "destructive" });
+      return;
+    }
+    setSavingDuration(true);
+    const { error } = await supabase
+      .from("courses")
+      .update({ quiz_duration_minutes: minutes })
+      .eq("id", selectedCourseId);
+    if (error) {
+      toast({ title: "خطأ في حفظ المدة", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "تم حفظ مدة الاختبار" });
+      setCourses((prev) =>
+        prev.map((c) => (c.id === selectedCourseId ? { ...c, quiz_duration_minutes: minutes } : c))
+      );
+    }
+    setSavingDuration(false);
+  };
 
   const loadQuestions = async (courseId: string) => {
     setLoadingQuestions(true);
