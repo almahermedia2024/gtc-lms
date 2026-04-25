@@ -164,11 +164,16 @@ export default function StudentQuiz() {
     }
 
     const ids = qs.map((q) => q.id);
-    const { data: opts } = await supabase
-      .from("quiz_options")
-      .select("id, question_id, option_text, option_order, is_correct")
-      .in("question_id", ids)
-      .order("option_order", { ascending: true });
+    // Use security-definer RPC so students NEVER receive `is_correct`
+    const { data: opts, error: optsErr } = await supabase.rpc(
+      "get_quiz_options_for_student",
+      { _course_id: courseId }
+    );
+    if (optsErr) {
+      toast({ title: "خطأ في تحميل الخيارات", description: optsErr.message, variant: "destructive" });
+      navigate("/student");
+      return;
+    }
 
     const optsByQ = new Map<string, QuestionWithOptions["options"]>();
     (opts || []).forEach((o) => {
@@ -176,7 +181,6 @@ export default function StudentQuiz() {
       arr.push({
         id: o.id,
         option_text: o.option_text,
-        is_correct: o.is_correct,
       });
       optsByQ.set(o.question_id, arr);
     });
@@ -188,6 +192,8 @@ export default function StudentQuiz() {
         options: optsByQ.get(q.id) || [],
       }))
     );
+
+    void ids;
 
     // Check previous attempt
     const { data: attempts } = await supabase
