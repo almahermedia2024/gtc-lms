@@ -46,7 +46,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { user_id, full_name, email, password, phone } = await req.json();
+    const { user_id, full_name, email, password, phone, is_active } = await req.json();
     if (!user_id) {
       return new Response(JSON.stringify({ error: "user_id required" }), {
         status: 400,
@@ -55,6 +55,29 @@ Deno.serve(async (req) => {
     }
 
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
+
+    // Update is_active if provided; revoke session when deactivating
+    if (typeof is_active === "boolean") {
+      const { error: actErr } = await adminClient
+        .from("profiles")
+        .update({ is_active })
+        .eq("user_id", user_id);
+      if (actErr) {
+        console.error("Update is_active error:", actErr);
+        return new Response(JSON.stringify({ error: "Failed to update status" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if (is_active === false) {
+        // Revoke any active sessions so the disabled user is logged out everywhere
+        try {
+          await adminClient.auth.admin.signOut(user_id, "global");
+        } catch (e) {
+          console.error("signOut error:", e);
+        }
+      }
+    }
 
     // Update auth user (email/password) if provided
     const authUpdates: Record<string, string> = {};

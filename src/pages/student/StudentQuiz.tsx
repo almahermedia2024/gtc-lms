@@ -23,7 +23,17 @@ import {
 interface QuestionWithOptions {
   id: string;
   question_text: string;
-  options: { id: string; option_text: string; is_correct: boolean }[];
+  options: { id: string; option_text: string }[];
+}
+
+interface ReviewItem {
+  question_id: string;
+  question_text: string;
+  selected_option_id: string | null;
+  selected_option_text: string;
+  is_correct: boolean;
+  correct_option_id: string | null;
+  correct_option_text: string | null;
 }
 
 interface CourseInfo {
@@ -60,6 +70,7 @@ export default function StudentQuiz() {
     total_questions: number;
     percentage: number;
   } | null>(null);
+  const [review, setReview] = useState<ReviewItem[]>([]);
 
   // Timer
   const [timeLeft, setTimeLeft] = useState<number>(0); // seconds
@@ -153,12 +164,16 @@ export default function StudentQuiz() {
       return;
     }
 
-    const ids = qs.map((q) => q.id);
-    const { data: opts } = await supabase
-      .from("quiz_options")
-      .select("id, question_id, option_text, option_order, is_correct")
-      .in("question_id", ids)
-      .order("option_order", { ascending: true });
+    // Use security-definer RPC so students NEVER receive `is_correct`
+    const { data: opts, error: optsErr } = await supabase.rpc(
+      "get_quiz_options_for_student",
+      { _course_id: courseId }
+    );
+    if (optsErr) {
+      toast({ title: "خطأ في تحميل الخيارات", description: optsErr.message, variant: "destructive" });
+      navigate("/student");
+      return;
+    }
 
     const optsByQ = new Map<string, QuestionWithOptions["options"]>();
     (opts || []).forEach((o) => {
@@ -166,7 +181,6 @@ export default function StudentQuiz() {
       arr.push({
         id: o.id,
         option_text: o.option_text,
-        is_correct: o.is_correct,
       });
       optsByQ.set(o.question_id, arr);
     });
@@ -178,7 +192,6 @@ export default function StudentQuiz() {
         options: optsByQ.get(q.id) || [],
       }))
     );
-
     // Check previous attempt
     const { data: attempts } = await supabase
       .from("quiz_attempts")
@@ -230,47 +243,21 @@ export default function StudentQuiz() {
     submittedRef.current = true;
     setSubmitting(true);
 
-    let correctCount = 0;
-    const answerRows: {
-      question_id: string;
-      selected_option_id: string | null;
-      is_correct: boolean;
-    }[] = [];
+    // Build payload — scoring happens server-side via SECURITY DEFINER fn
+    const answersPayload = questions.map((q) => ({
+      question_id: q.id,
+      selected_option_id: currentAnswers[q.id] || null,
+    }));
 
-    questions.forEach((q) => {
-      const selectedId = currentAnswers[q.id] || null;
-      const selected = selectedId ? q.options.find((o) => o.id === selectedId) : undefined;
-      const isCorrect = !!selected?.is_correct;
-      if (isCorrect) correctCount++;
-      answerRows.push({
-        question_id: q.id,
-        selected_option_id: selectedId,
-        is_correct: isCorrect,
-      });
+    const { data: rpcData, error: rpcErr } = await supabase.rpc("submit_quiz_attempt", {
+      _course_id: courseId,
+      _answers: answersPayload,
     });
 
-    const total = questions.length;
-    const pct = total > 0 ? (correctCount / total) * 100 : 0;
-
-    // Create attempt
-    const { data: attempt, error: attErr } = await supabase
-      .from("quiz_attempts")
-      .insert({
-        student_id: user.id,
-        course_id: courseId,
-        total_questions: total,
-        correct_answers: correctCount,
-        score: correctCount,
-        percentage: pct,
-        completed_at: new Date().toISOString(),
-      })
-      .select()
-      .single();
-
-    if (attErr || !attempt) {
+    if (rpcErr || !rpcData || rpcData.length === 0) {
       toast({
         title: "خطأ في حفظ المحاولة",
-        description: attErr?.message,
+        description: rpcErr?.message,
         variant: "destructive",
       });
       submittedRef.current = false;
@@ -278,13 +265,30 @@ export default function StudentQuiz() {
       return;
     }
 
-    // Insert answers
-    await supabase.from("quiz_answers").insert(
-      answerRows.map((a) => ({
-        attempt_id: attempt.id,
-        ...a,
-      }))
-    );
+    const row = rpcData[0];
+    const correctCount = row.correct_answers;
+    const total = row.total_questions;
+    const pct = row.percentage;
+
+    // Fetch verified review (correct answers exposed only after submission)
+    const { data: reviewData } = await supabase.rpc("get_quiz_review", {
+      _attempt_id: row.attempt_id,
+    });
+
+    const reviewItems: ReviewItem[] = (reviewData || []).map((r) => {
+      const q = questions.find((qq) => qq.id === r.question_id);
+      const selectedOpt = q?.options.find((o) => o.id === r.selected_option_id);
+      return {
+        question_id: r.question_id,
+        question_text: r.question_text,
+        selected_option_id: r.selected_option_id,
+        selected_option_text: selectedOpt?.option_text ?? "",
+        is_correct: r.is_correct,
+        correct_option_id: r.correct_option_id,
+        correct_option_text: r.correct_option_text,
+      };
+    });
+    setReview(reviewItems);
 
     if (auto) {
       toast({
@@ -557,16 +561,13 @@ export default function StudentQuiz() {
               </div>
             </div>
 
-            {/* Review answers */}
+            {/* Review answers — correctness comes from server, not client */}
             <div className="space-y-3 text-right mb-6">
-              {questions.map((q, idx) => {
-                const selectedId = answers[q.id];
-                const selected = q.options.find((o) => o.id === selectedId);
-                const correct = q.options.find((o) => o.is_correct);
-                const isCorrect = !!selected?.is_correct;
+              {review.map((r, idx) => {
+                const isCorrect = r.is_correct;
                 return (
                   <div
-                    key={q.id}
+                    key={r.question_id}
                     className={`p-3 rounded-lg border ${
                       isCorrect
                         ? "border-accent/30 bg-accent/5"
@@ -580,20 +581,20 @@ export default function StudentQuiz() {
                         <XCircle className="w-4 h-4 text-destructive shrink-0 mt-1" />
                       )}
                       <p className="text-sm font-medium">
-                        {idx + 1}. {q.question_text}
+                        {idx + 1}. {r.question_text}
                       </p>
                     </div>
                     <div className="text-xs space-y-1 pr-6">
                       <p>
                         إجابتك:{" "}
                         <span className={isCorrect ? "text-accent" : "text-destructive"}>
-                          {selected?.option_text || "—"}
+                          {r.selected_option_text || "—"}
                         </span>
                       </p>
-                      {!isCorrect && correct && (
+                      {!isCorrect && r.correct_option_text && (
                         <p>
                           الإجابة الصحيحة:{" "}
-                          <span className="text-accent">{correct.option_text}</span>
+                          <span className="text-accent">{r.correct_option_text}</span>
                         </p>
                       )}
                     </div>

@@ -180,12 +180,15 @@ export default function AdminStudents() {
 
   const handleToggleActive = async (student: StudentRecord) => {
     const newStatus = !student.is_active;
-    const { error } = await supabase
-      .from("profiles")
-      .update({ is_active: newStatus })
-      .eq("user_id", student.user_id);
-    if (error) {
-      toast({ title: "خطأ", description: error.message, variant: "destructive" });
+    const { data, error } = await supabase.functions.invoke("update-student", {
+      body: { user_id: student.user_id, is_active: newStatus },
+    });
+    if (error || data?.error) {
+      toast({
+        title: "خطأ",
+        description: error?.message || data?.error,
+        variant: "destructive",
+      });
     } else {
       toast({ title: newStatus ? "تم تفعيل الطالب" : "تم تعطيل الطالب" });
       fetchStudents();
