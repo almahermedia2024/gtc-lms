@@ -426,14 +426,25 @@ export default function StudentQuiz() {
       {stage === "in_progress" && (
         <div className="space-y-4">
           <Card className="sticky top-4 z-10 backdrop-blur-sm bg-background/80">
-            <CardContent className="py-3 flex items-center justify-between">
+            <CardContent className="py-3 flex items-center justify-between gap-3 flex-wrap">
               <span className="text-sm font-medium">
                 تم الإجابة:{" "}
                 <span className="text-primary font-bold">
                   {Object.keys(answers).length} / {questions.length}
                 </span>
               </span>
-              <Badge variant="outline">{course?.title}</Badge>
+              <div
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-md font-mono font-bold text-base ${
+                  timeLeft <= 60
+                    ? "bg-destructive/10 text-destructive animate-pulse"
+                    : timeLeft <= 300
+                      ? "bg-secondary/15 text-secondary"
+                      : "bg-primary/10 text-primary"
+                }`}
+              >
+                <Timer className="w-4 h-4" />
+                {formatTime(timeLeft)}
+              </div>
             </CardContent>
           </Card>
 
@@ -478,13 +489,13 @@ export default function StudentQuiz() {
           <Card>
             <CardContent className="py-4">
               <Button
-                onClick={handleSubmit}
+                onClick={() => handleSubmit(false)}
                 disabled={submitting}
                 className="w-full"
                 size="lg"
               >
                 {submitting && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
-                إرسال الإجابات
+                إنهاء الاختبار وعرض النتيجة
               </Button>
             </CardContent>
           </Card>
