@@ -412,11 +412,20 @@ export default function StudentQuiz() {
             </div>
 
             {previousAttempt && (
-              <div className="p-4 rounded-lg border border-border/50 bg-card">
-                <p className="text-sm text-muted-foreground mb-1">آخر محاولة لك:</p>
+              <div className="p-4 rounded-lg border border-destructive/30 bg-destructive/5">
+                <div className="flex items-center gap-2 mb-2">
+                  <Lock className="w-4 h-4 text-destructive" />
+                  <p className="text-sm font-semibold text-destructive">
+                    لقد أجريت هذا الاختبار من قبل
+                  </p>
+                </div>
+                <p className="text-sm text-muted-foreground mb-1">نتيجتك:</p>
                 <p className="font-semibold">
                   {previousAttempt.correct_answers} / {previousAttempt.total_questions} (
                   {Math.round(previousAttempt.percentage)}%)
+                </p>
+                <p className="text-xs text-muted-foreground mt-2">
+                  مسموح بمحاولة واحدة فقط لكل طالب، ولا يمكن إعادة الاختبار.
                 </p>
               </div>
             )}
@@ -426,10 +435,16 @@ export default function StudentQuiz() {
               <p>• مدة الاختبار {course.quiz_duration_minutes} دقيقة، يبدأ العد التنازلي عند الضغط على "بدء الاختبار"</p>
               <p>• عند انتهاء الوقت تُحفظ إجاباتك تلقائياً وتظهر النتيجة</p>
               <p>• يمكنك الضغط على "إنهاء الاختبار" قبل انتهاء الوقت لعرض النتيجة</p>
+              <p className="text-destructive">• لديك محاولة واحدة فقط، لا يمكن إعادة الاختبار بعد تسليمه</p>
             </div>
 
-            <Button onClick={handleStart} className="w-full" size="lg">
-              بدء الاختبار
+            <Button
+              onClick={handleStart}
+              className="w-full"
+              size="lg"
+              disabled={!!previousAttempt}
+            >
+              {previousAttempt ? "تم استخدام محاولتك" : "بدء الاختبار"}
             </Button>
           </CardContent>
         </Card>
