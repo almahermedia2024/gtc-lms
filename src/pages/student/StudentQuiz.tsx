@@ -29,6 +29,7 @@ interface QuestionWithOptions {
 interface CourseInfo {
   id: string;
   title: string;
+  quiz_duration_minutes: number;
 }
 
 type Stage = "loading" | "locked" | "intro" | "in_progress" | "submitted" | "no_quiz";
