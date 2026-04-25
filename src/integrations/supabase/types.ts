@@ -49,6 +49,7 @@ export type Database = {
           created_by: string | null
           description: string | null
           id: string
+          quiz_duration_minutes: number
           title: string
           updated_at: string
         }
@@ -57,6 +58,7 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           id?: string
+          quiz_duration_minutes?: number
           title: string
           updated_at?: string
         }
@@ -65,6 +67,7 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           id?: string
+          quiz_duration_minutes?: number
           title?: string
           updated_at?: string
         }
