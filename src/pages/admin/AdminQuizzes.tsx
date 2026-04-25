@@ -93,12 +93,16 @@ export default function AdminQuizzes() {
   const [deleteQuestion, setDeleteQuestion] = useState<Question | null>(null);
   const [deleting, setDeleting] = useState(false);
 
+  // Quiz duration
+  const [durationInput, setDurationInput] = useState<string>("30");
+  const [savingDuration, setSavingDuration] = useState(false);
+
   useEffect(() => {
     const loadCourses = async () => {
       setLoading(true);
       const { data, error } = await supabase
         .from("courses")
-        .select("id, title")
+        .select("id, title, quiz_duration_minutes")
         .order("created_at", { ascending: false });
       if (error) {
         toast({ title: "خطأ في تحميل الكورسات", description: error.message, variant: "destructive" });
