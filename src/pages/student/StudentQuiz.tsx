@@ -529,7 +529,14 @@ export default function StudentQuiz() {
             <h2 className="text-2xl font-heading font-bold mb-2">
               {result.percentage >= 50 ? "أحسنت!" : "حاول مرة أخرى"}
             </h2>
-            <p className="text-muted-foreground mb-6">نتيجتك في الاختبار</p>
+            {result.autoSubmitted ? (
+              <div className="mb-6 p-3 rounded-lg bg-secondary/10 border border-secondary/30 text-sm flex items-center justify-center gap-2">
+                <Timer className="w-4 h-4 text-secondary" />
+                <span>انتهى الوقت، تم حفظ إجاباتك تلقائياً.</span>
+              </div>
+            ) : (
+              <p className="text-muted-foreground mb-6">نتيجتك في الاختبار</p>
+            )}
 
             <div className="grid grid-cols-3 gap-4 mb-6">
               <div className="p-4 rounded-lg bg-muted/50">
