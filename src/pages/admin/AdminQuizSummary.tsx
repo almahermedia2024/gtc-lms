@@ -188,7 +188,7 @@ export default function AdminQuizSummary() {
                         <Badge variant="outline">{typeLabels[s.question_type]}</Badge>
                       </TableCell>
                       <TableCell>{s.total_attempts}</TableCell>
-                      <TableCell className="text-green-600 font-medium">{s.correct_count}</TableCell>
+                      <TableCell className="text-primary font-medium">{s.correct_count}</TableCell>
                       <TableCell className="text-destructive font-medium">{s.wrong_count}</TableCell>
                       <TableCell>
                         {s.total_attempts === 0 ? (
