@@ -32,6 +32,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import {
   Plus,
@@ -45,6 +46,14 @@ import {
   Timer,
   Save,
 } from "lucide-react";
+
+type QuestionType = "single" | "multiple" | "true_false";
+
+const QUESTION_TYPE_LABELS: Record<QuestionType, string> = {
+  single: "اختيار من متعدد (إجابة واحدة)",
+  multiple: "اختيار من متعدد (عدة إجابات)",
+  true_false: "صح / خطأ",
+};
 
 interface Course {
   id: string;
@@ -63,9 +72,25 @@ interface Question {
   id: string;
   course_id: string;
   question_text: string;
+  question_type: QuestionType;
   question_order: number;
   options: QuizOption[];
 }
+
+const buildDefaultOptions = (type: QuestionType): QuizOption[] => {
+  if (type === "true_false") {
+    return [
+      { option_text: "صح", is_correct: true, option_order: 0 },
+      { option_text: "خطأ", is_correct: false, option_order: 1 },
+    ];
+  }
+  return [
+    { option_text: "", is_correct: true, option_order: 0 },
+    { option_text: "", is_correct: false, option_order: 1 },
+    { option_text: "", is_correct: false, option_order: 2 },
+    { option_text: "", is_correct: false, option_order: 3 },
+  ];
+};
 
 export default function AdminQuizzes() {
   const { user } = useAuth();
@@ -81,12 +106,8 @@ export default function AdminQuizzes() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
   const [questionText, setQuestionText] = useState("");
-  const [options, setOptions] = useState<QuizOption[]>([
-    { option_text: "", is_correct: true, option_order: 0 },
-    { option_text: "", is_correct: false, option_order: 1 },
-    { option_text: "", is_correct: false, option_order: 2 },
-    { option_text: "", is_correct: false, option_order: 3 },
-  ]);
+  const [questionType, setQuestionType] = useState<QuestionType>("single");
+  const [options, setOptions] = useState<QuizOption[]>(buildDefaultOptions("single"));
   const [saving, setSaving] = useState(false);
 
   // Delete confirmation
@@ -153,7 +174,7 @@ export default function AdminQuizzes() {
     setLoadingQuestions(true);
     const { data: qs, error } = await supabase
       .from("quiz_questions")
-      .select("id, course_id, question_text, question_order")
+      .select("id, course_id, question_text, question_order, question_type")
       .eq("course_id", courseId)
       .order("question_order", { ascending: true });
 
@@ -193,6 +214,7 @@ export default function AdminQuizzes() {
         id: q.id,
         course_id: q.course_id,
         question_text: q.question_text,
+        question_type: (q.question_type as QuestionType) || "single",
         question_order: q.question_order,
         options: optsByQ.get(q.id) || [],
       }))
@@ -203,28 +225,47 @@ export default function AdminQuizzes() {
   const openAddDialog = () => {
     setEditingQuestion(null);
     setQuestionText("");
-    setOptions([
-      { option_text: "", is_correct: true, option_order: 0 },
-      { option_text: "", is_correct: false, option_order: 1 },
-      { option_text: "", is_correct: false, option_order: 2 },
-      { option_text: "", is_correct: false, option_order: 3 },
-    ]);
+    setQuestionType("single");
+    setOptions(buildDefaultOptions("single"));
     setDialogOpen(true);
   };
 
   const openEditDialog = (q: Question) => {
     setEditingQuestion(q);
     setQuestionText(q.question_text);
+    setQuestionType(q.question_type);
     setOptions(
       q.options.length > 0
         ? q.options.map((o, i) => ({ ...o, option_order: i }))
-        : [{ option_text: "", is_correct: true, option_order: 0 }]
+        : buildDefaultOptions(q.question_type)
     );
     setDialogOpen(true);
   };
 
-  const setCorrectOption = (idx: number) => {
+  const handleTypeChange = (newType: QuestionType) => {
+    setQuestionType(newType);
+    // Reset options when switching type to a sensible default
+    if (newType === "true_false") {
+      setOptions(buildDefaultOptions("true_false"));
+    } else if (questionType === "true_false") {
+      // coming from true_false, rebuild MCQ defaults
+      setOptions(buildDefaultOptions(newType));
+    } else if (newType === "single") {
+      // Ensure exactly one correct option
+      setOptions((prev) => {
+        const firstCorrect = prev.findIndex((o) => o.is_correct);
+        const idx = firstCorrect >= 0 ? firstCorrect : 0;
+        return prev.map((o, i) => ({ ...o, is_correct: i === idx }));
+      });
+    }
+  };
+
+  const setSingleCorrectOption = (idx: number) => {
     setOptions((prev) => prev.map((o, i) => ({ ...o, is_correct: i === idx })));
+  };
+
+  const toggleMultipleCorrectOption = (idx: number) => {
+    setOptions((prev) => prev.map((o, i) => (i === idx ? { ...o, is_correct: !o.is_correct } : o)));
   };
 
   const updateOptionText = (idx: number, text: string) => {
@@ -232,6 +273,7 @@ export default function AdminQuizzes() {
   };
 
   const addOption = () => {
+    if (questionType === "true_false") return;
     if (options.length >= 6) return;
     setOptions((prev) => [
       ...prev,
@@ -240,11 +282,13 @@ export default function AdminQuizzes() {
   };
 
   const removeOption = (idx: number) => {
+    if (questionType === "true_false") return;
     if (options.length <= 2) return;
     setOptions((prev) => {
       const filtered = prev.filter((_, i) => i !== idx).map((o, i) => ({ ...o, option_order: i }));
-      // Ensure at least one correct
-      if (!filtered.some((o) => o.is_correct)) filtered[0].is_correct = true;
+      if (questionType === "single" && !filtered.some((o) => o.is_correct)) {
+        filtered[0].is_correct = true;
+      }
       return filtered;
     });
   };
@@ -256,29 +300,45 @@ export default function AdminQuizzes() {
       return;
     }
     const validOptions = options.filter((o) => o.option_text.trim());
-    if (validOptions.length < 2) {
-      toast({ title: "يجب توفير خيارين على الأقل", variant: "destructive" });
-      return;
-    }
-    if (!validOptions.some((o) => o.is_correct)) {
-      toast({ title: "يجب تحديد إجابة صحيحة", variant: "destructive" });
-      return;
+
+    if (questionType === "true_false") {
+      if (validOptions.length !== 2) {
+        toast({ title: "سؤال صح/خطأ يجب أن يحتوي على خيارين فقط", variant: "destructive" });
+        return;
+      }
+      const correctCount = validOptions.filter((o) => o.is_correct).length;
+      if (correctCount !== 1) {
+        toast({ title: "حدد إجابة صحيحة واحدة (صح أو خطأ)", variant: "destructive" });
+        return;
+      }
+    } else {
+      if (validOptions.length < 2) {
+        toast({ title: "يجب توفير خيارين على الأقل", variant: "destructive" });
+        return;
+      }
+      const correctCount = validOptions.filter((o) => o.is_correct).length;
+      if (questionType === "single" && correctCount !== 1) {
+        toast({ title: "يجب تحديد إجابة صحيحة واحدة فقط", variant: "destructive" });
+        return;
+      }
+      if (questionType === "multiple" && correctCount < 1) {
+        toast({ title: "يجب تحديد إجابة صحيحة واحدة على الأقل", variant: "destructive" });
+        return;
+      }
     }
 
     setSaving(true);
 
     if (editingQuestion) {
-      // Update question
       const { error: updErr } = await supabase
         .from("quiz_questions")
-        .update({ question_text: questionText.trim() })
+        .update({ question_text: questionText.trim(), question_type: questionType })
         .eq("id", editingQuestion.id);
       if (updErr) {
         toast({ title: "خطأ في حفظ السؤال", description: updErr.message, variant: "destructive" });
         setSaving(false);
         return;
       }
-      // Replace options: delete then insert
       await supabase.from("quiz_options").delete().eq("question_id", editingQuestion.id);
       const { error: insErr } = await supabase.from("quiz_options").insert(
         validOptions.map((o, i) => ({
@@ -295,13 +355,13 @@ export default function AdminQuizzes() {
       }
       toast({ title: "تم تعديل السؤال" });
     } else {
-      // Insert new question
       const nextOrder = questions.length;
       const { data: newQ, error: insErr } = await supabase
         .from("quiz_questions")
         .insert({
           course_id: selectedCourseId,
           question_text: questionText.trim(),
+          question_type: questionType,
           question_order: nextOrder,
           created_by: user?.id,
         })
@@ -364,7 +424,7 @@ export default function AdminQuizzes() {
             إدارة الاختبارات
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            أضف أسئلة الاختبار لكل كورس بنظام الاختيار من متعدد (MCQ)
+            أضف أسئلة الاختبار: اختيار من متعدد (إجابة واحدة)، اختيار متعدد، أو صح/خطأ
           </p>
         </div>
         <Button onClick={openAddDialog} disabled={!selectedCourseId}>
@@ -467,7 +527,12 @@ export default function AdminQuizzes() {
                           <Badge variant="outline" className="shrink-0 mt-0.5">
                             {idx + 1}
                           </Badge>
-                          <p className="font-medium leading-relaxed">{q.question_text}</p>
+                          <div className="flex-1">
+                            <p className="font-medium leading-relaxed">{q.question_text}</p>
+                            <Badge variant="secondary" className="mt-2 text-xs">
+                              {QUESTION_TYPE_LABELS[q.question_type]}
+                            </Badge>
+                          </div>
                         </div>
                         <div className="flex gap-1 shrink-0">
                           <Button
@@ -521,11 +586,25 @@ export default function AdminQuizzes() {
           <DialogHeader>
             <DialogTitle>{editingQuestion ? "تعديل السؤال" : "إضافة سؤال جديد"}</DialogTitle>
             <DialogDescription>
-              اكتب نص السؤال وحدد الخيارات، ثم اختر الإجابة الصحيحة.
+              اختر نوع السؤال، اكتب نصه، ثم حدد الإجابة (أو الإجابات) الصحيحة.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
+            <div>
+              <Label>نوع السؤال</Label>
+              <Select value={questionType} onValueChange={(v) => handleTypeChange(v as QuestionType)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="single">{QUESTION_TYPE_LABELS.single}</SelectItem>
+                  <SelectItem value="multiple">{QUESTION_TYPE_LABELS.multiple}</SelectItem>
+                  <SelectItem value="true_false">{QUESTION_TYPE_LABELS.true_false}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
             <div>
               <Label>نص السؤال</Label>
               <Textarea
@@ -539,8 +618,14 @@ export default function AdminQuizzes() {
 
             <div>
               <div className="flex items-center justify-between mb-2">
-                <Label>الخيارات (اختر الإجابة الصحيحة)</Label>
-                {options.length < 6 && (
+                <Label>
+                  {questionType === "true_false"
+                    ? "حدد الإجابة الصحيحة"
+                    : questionType === "multiple"
+                      ? "الخيارات (يمكن تحديد أكثر من إجابة صحيحة)"
+                      : "الخيارات (اختر الإجابة الصحيحة)"}
+                </Label>
+                {questionType !== "true_false" && options.length < 6 && (
                   <Button type="button" size="sm" variant="outline" onClick={addOption}>
                     <Plus className="w-3 h-3 ml-1" /> خيار
                   </Button>
@@ -549,23 +634,42 @@ export default function AdminQuizzes() {
               <div className="space-y-2">
                 {options.map((o, idx) => (
                   <div key={idx} className="flex items-center gap-2">
-                    <Button
-                      type="button"
-                      variant={o.is_correct ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setCorrectOption(idx)}
-                      className="shrink-0 w-10"
-                      title="حدد كإجابة صحيحة"
-                    >
-                      {o.is_correct ? <CheckCircle2 className="w-4 h-4" /> : String.fromCharCode(0x0623 + idx)}
-                    </Button>
+                    {questionType === "multiple" ? (
+                      <div
+                        className={`shrink-0 w-10 h-9 flex items-center justify-center rounded-md border cursor-pointer ${
+                          o.is_correct
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-background"
+                        }`}
+                        onClick={() => toggleMultipleCorrectOption(idx)}
+                        title="حدد كإجابة صحيحة"
+                      >
+                        <Checkbox
+                          checked={o.is_correct}
+                          onCheckedChange={() => toggleMultipleCorrectOption(idx)}
+                          className="pointer-events-none"
+                        />
+                      </div>
+                    ) : (
+                      <Button
+                        type="button"
+                        variant={o.is_correct ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setSingleCorrectOption(idx)}
+                        className="shrink-0 w-10"
+                        title="حدد كإجابة صحيحة"
+                      >
+                        {o.is_correct ? <CheckCircle2 className="w-4 h-4" /> : String.fromCharCode(0x0623 + idx)}
+                      </Button>
+                    )}
                     <Input
                       value={o.option_text}
                       onChange={(e) => updateOptionText(idx, e.target.value)}
                       placeholder={`الخيار ${idx + 1}`}
                       maxLength={500}
+                      disabled={questionType === "true_false"}
                     />
-                    {options.length > 2 && (
+                    {questionType !== "true_false" && options.length > 2 && (
                       <Button
                         type="button"
                         variant="ghost"
@@ -580,7 +684,11 @@ export default function AdminQuizzes() {
                 ))}
               </div>
               <p className="text-xs text-muted-foreground mt-2">
-                اضغط على الزر بجانب الخيار لتحديده كإجابة صحيحة
+                {questionType === "multiple"
+                  ? "ضع علامة على كل الخيارات الصحيحة. لكي تُحتسب إجابة الطالب صحيحة يجب أن يختار جميع الإجابات الصحيحة دون أي إجابة خاطئة."
+                  : questionType === "true_false"
+                    ? "اضغط على الزر بجانب 'صح' أو 'خطأ' لتحديد الإجابة الصحيحة."
+                    : "اضغط على الزر بجانب الخيار لتحديده كإجابة صحيحة."}
               </p>
             </div>
           </div>
