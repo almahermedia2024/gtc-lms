@@ -283,6 +283,7 @@ export type Database = {
           id: string
           question_order: number
           question_text: string
+          question_type: Database["public"]["Enums"]["question_type"]
           updated_at: string
         }
         Insert: {
@@ -292,6 +293,7 @@ export type Database = {
           id?: string
           question_order?: number
           question_text: string
+          question_type?: Database["public"]["Enums"]["question_type"]
           updated_at?: string
         }
         Update: {
@@ -301,6 +303,7 @@ export type Database = {
           id?: string
           question_order?: number
           question_text?: string
+          question_type?: Database["public"]["Enums"]["question_type"]
           updated_at?: string
         }
         Relationships: [
@@ -424,12 +427,14 @@ export type Database = {
       get_quiz_review: {
         Args: { _attempt_id: string }
         Returns: {
-          correct_option_id: string
-          correct_option_text: string
+          correct_option_ids: string[]
+          correct_option_texts: string[]
           is_correct: boolean
           question_id: string
           question_text: string
-          selected_option_id: string
+          question_type: Database["public"]["Enums"]["question_type"]
+          selected_option_ids: string[]
+          selected_option_texts: string[]
         }[]
       }
       has_role: {
@@ -451,6 +456,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "student"
+      question_type: "single" | "multiple" | "true_false"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -579,6 +585,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "student"],
+      question_type: ["single", "multiple", "true_false"],
     },
   },
 } as const
