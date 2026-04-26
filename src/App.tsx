@@ -15,6 +15,7 @@ import AdminCourses from "./pages/admin/AdminCourses";
 import AdminReports from "./pages/admin/AdminReports";
 import AdminAccount from "./pages/admin/AdminAccount";
 import AdminQuizzes from "./pages/admin/AdminQuizzes";
+import AdminQuizSummary from "./pages/admin/AdminQuizSummary";
 import StudentLectures from "./pages/student/StudentLectures";
 import StudentQuiz from "./pages/student/StudentQuiz";
 import NotFound from "./pages/NotFound";
@@ -49,6 +50,7 @@ const App = () => (
               <Route path="students" element={<AdminStudents />} />
               <Route path="reports" element={<AdminReports />} />
               <Route path="quizzes" element={<AdminQuizzes />} />
+              <Route path="quiz-summary" element={<AdminQuizSummary />} />
               <Route path="account" element={<AdminAccount />} />
             </Route>
             <Route path="/student" element={<RequireAuth role="student"><StudentLayout /></RequireAuth>}>

@@ -424,6 +424,20 @@ export type Database = {
           question_id: string
         }[]
       }
+      get_quiz_question_stats: {
+        Args: { _course_id: string }
+        Returns: {
+          correct_count: number
+          correct_percentage: number
+          question_id: string
+          question_order: number
+          question_text: string
+          question_type: Database["public"]["Enums"]["question_type"]
+          total_attempts: number
+          wrong_count: number
+          wrong_percentage: number
+        }[]
+      }
       get_quiz_review: {
         Args: { _attempt_id: string }
         Returns: {
