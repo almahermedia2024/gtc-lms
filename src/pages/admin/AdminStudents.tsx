@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { Upload, Loader2, UserPlus, Trash2, Pencil, Ban, CheckCircle, Phone, Mail } from "lucide-react";
+import { Upload, Loader2, UserPlus, Trash2, Pencil, Ban, CheckCircle, Phone, Mail, Download } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import * as XLSX from "xlsx";
 
