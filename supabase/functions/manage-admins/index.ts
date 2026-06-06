@@ -81,7 +81,11 @@ Deno.serve(async (req) => {
         email_confirm: true,
       });
       if (createError || !newUser.user) {
-        return new Response(JSON.stringify({ error: createError?.message || "فشل الإنشاء" }), {
+        let msg = createError?.message || "فشل الإنشاء";
+        if (msg.toLowerCase().includes("weak") || msg.toLowerCase().includes("pwned")) {
+          msg = "كلمة المرور ضعيفة أو مسرّبة في قواعد البيانات العامة. اختر كلمة مرور أقوى وفريدة.";
+        }
+        return new Response(JSON.stringify({ error: msg }), {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
