@@ -88,7 +88,16 @@ Deno.serve(async (req) => {
       const { error: authError } = await adminClient.auth.admin.updateUserById(user_id, authUpdates);
       if (authError) {
         console.error("Update auth error:", authError);
-        return new Response(JSON.stringify({ error: "Failed to update credentials" }), {
+        const msg = (authError.message || "").toLowerCase();
+        let friendly = "فشل تحديث بيانات الدخول";
+        if (msg.includes("weak") || msg.includes("pwned")) {
+          friendly = "كلمة المرور ضعيفة أو مسرّبة في قواعد البيانات العامة. اختر كلمة مرور أقوى وفريدة.";
+        } else if (msg.includes("invalid") && msg.includes("email")) {
+          friendly = "صيغة البريد الإلكتروني غير صحيحة";
+        } else if (msg.includes("already") || msg.includes("registered")) {
+          friendly = "هذا البريد الإلكتروني مستخدم بالفعل";
+        }
+        return new Response(JSON.stringify({ error: friendly }), {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
