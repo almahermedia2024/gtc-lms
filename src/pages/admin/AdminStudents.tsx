@@ -266,7 +266,23 @@ export default function AdminStudents() {
           <p className="text-sm text-muted-foreground mb-4">
             يجب أن يحتوي الملف على أعمدة: <strong>email</strong> و <strong>password</strong> و <strong>full_name</strong> (اختياري) و <strong>phone</strong> (اختياري)
           </p>
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-3">
+            <Button
+              variant="secondary"
+              onClick={() => {
+                const sample = [
+                  { email: "student1@example.com", password: "Pass@1234", full_name: "اسم الطالب الأول", phone: "01000000000" },
+                  { email: "student2@example.com", password: "Pass@5678", full_name: "اسم الطالب الثاني", phone: "01111111111" },
+                ];
+                const ws = XLSX.utils.json_to_sheet(sample, { header: ["email", "password", "full_name", "phone"] });
+                ws["!cols"] = [{ wch: 28 }, { wch: 18 }, { wch: 24 }, { wch: 16 }];
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "Students");
+                XLSX.writeFile(wb, "students_template.xlsx");
+              }}
+            >
+              <Download className="w-4 h-4 ml-2" />تحميل نموذج Excel
+            </Button>
             <input ref={fileRef} type="file" accept=".csv,.xlsx,.xls" onChange={handleFile} className="hidden" />
             <Button variant="outline" onClick={() => fileRef.current?.click()}>
               <Upload className="w-4 h-4 ml-2" />اختيار ملف
