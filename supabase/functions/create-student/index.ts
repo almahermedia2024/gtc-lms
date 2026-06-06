@@ -58,7 +58,16 @@ Deno.serve(async (req) => {
 
     if (createError) {
       console.error("Create student error:", createError);
-      return new Response(JSON.stringify({ error: "Failed to create student account" }), {
+      const msg = (createError.message || "").toLowerCase();
+      let friendly = createError.message || "Failed to create student account";
+      if (msg.includes("invalid format") || msg.includes("validate email")) {
+        friendly = `صيغة البريد الإلكتروني غير صحيحة: ${email}`;
+      } else if (msg.includes("weak") || msg.includes("pwned")) {
+        friendly = "كلمة المرور ضعيفة أو مسرّبة. اختر كلمة مرور أقوى (8+ أحرف، أرقام، رموز).";
+      } else if (msg.includes("already") || msg.includes("registered") || msg.includes("exists")) {
+        friendly = `هذا البريد مسجّل مسبقاً: ${email}`;
+      }
+      return new Response(JSON.stringify({ error: friendly }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
