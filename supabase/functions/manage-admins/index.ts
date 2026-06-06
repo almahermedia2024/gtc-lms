@@ -81,7 +81,11 @@ Deno.serve(async (req) => {
         email_confirm: true,
       });
       if (createError || !newUser.user) {
-        return new Response(JSON.stringify({ error: createError?.message || "فشل الإنشاء" }), {
+        let msg = createError?.message || "فشل الإنشاء";
+        if (msg.toLowerCase().includes("weak") || msg.toLowerCase().includes("pwned")) {
+          msg = "كلمة المرور ضعيفة أو مسرّبة في قواعد البيانات العامة. اختر كلمة مرور أقوى وفريدة.";
+        }
+        return new Response(JSON.stringify({ error: msg }), {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
@@ -114,7 +118,11 @@ Deno.serve(async (req) => {
       }
       const { error: updErr } = await adminClient.auth.admin.updateUserById(target_user_id, { password });
       if (updErr) {
-        return new Response(JSON.stringify({ error: updErr.message }), {
+        let msg = updErr.message;
+        if (msg.toLowerCase().includes("weak") || msg.toLowerCase().includes("pwned")) {
+          msg = "كلمة المرور ضعيفة أو مسرّبة في قواعد البيانات العامة. اختر كلمة مرور أقوى وفريدة.";
+        }
+        return new Response(JSON.stringify({ error: msg }), {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
