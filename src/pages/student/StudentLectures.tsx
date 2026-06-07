@@ -279,6 +279,20 @@ export default function StudentLectures() {
                       {l.last_watched_at && (
                         <p className="text-xs text-muted-foreground mt-2">آخر مشاهدة: {new Date(l.last_watched_at).toLocaleDateString("ar")}</p>
                       )}
+                      {l.pdf_url && (
+                        <Button
+                          asChild
+                          size="sm"
+                          variant="outline"
+                          className="w-full mt-3"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <a href={l.pdf_url} target="_blank" rel="noopener noreferrer">
+                            <FileText className="w-4 h-4 ml-2" />
+                            تحميل ملف PDF
+                          </a>
+                        </Button>
+                      )}
                     </CardContent>
                   </Card>
                 ))}
