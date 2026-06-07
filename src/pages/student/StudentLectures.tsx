@@ -5,7 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { VideoPlayer } from "@/components/VideoPlayer";
-import { Play, Clock, CheckCircle, BookOpen, Sparkles, ClipboardList } from "lucide-react";
+import { Play, Clock, CheckCircle, BookOpen, Sparkles, ClipboardList, FileText } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 interface LectureWithProgress {
@@ -14,6 +14,7 @@ interface LectureWithProgress {
   description: string | null;
   video_url: string;
   duration_minutes: number | null;
+  pdf_url: string | null;
   course_id: string | null;
   course_title: string | null;
   watched_seconds: number;
@@ -277,6 +278,20 @@ export default function StudentLectures() {
                       </div>
                       {l.last_watched_at && (
                         <p className="text-xs text-muted-foreground mt-2">آخر مشاهدة: {new Date(l.last_watched_at).toLocaleDateString("ar")}</p>
+                      )}
+                      {l.pdf_url && (
+                        <Button
+                          asChild
+                          size="sm"
+                          variant="outline"
+                          className="w-full mt-3"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <a href={l.pdf_url} target="_blank" rel="noopener noreferrer">
+                            <FileText className="w-4 h-4 ml-2" />
+                            تحميل ملف PDF
+                          </a>
+                        </Button>
                       )}
                     </CardContent>
                   </Card>

@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, Users } from "lucide-react";
+import { Plus, Trash2, Users, FileText, Pencil } from "lucide-react";
 import { AssignStudentsDialog } from "@/components/AssignStudentsDialog";
 
 interface Lecture {
@@ -18,6 +18,7 @@ interface Lecture {
   description: string | null;
   video_url: string;
   duration_minutes: number | null;
+  pdf_url: string | null;
   created_at: string;
 }
 
@@ -27,7 +28,9 @@ export default function AdminLectures() {
   const [lectures, setLectures] = useState<Lecture[]>([]);
   const [open, setOpen] = useState(false);
   const [assignLecture, setAssignLecture] = useState<string | null>(null);
-  const [form, setForm] = useState({ title: "", description: "", video_url: "", duration_minutes: "" });
+  const [pdfLecture, setPdfLecture] = useState<Lecture | null>(null);
+  const [pdfUrlInput, setPdfUrlInput] = useState("");
+  const [form, setForm] = useState({ title: "", description: "", video_url: "", duration_minutes: "", pdf_url: "" });
 
   const fetchLectures = async () => {
     const { data } = await supabase.from("lectures").select("*").order("created_at", { ascending: false });
@@ -50,15 +53,30 @@ export default function AdminLectures() {
       description: form.description || null,
       video_url: form.video_url,
       duration_minutes: form.duration_minutes ? parseInt(form.duration_minutes) : 0,
+      pdf_url: form.pdf_url.trim() || null,
       created_by: user?.id,
     });
     if (error) {
       toast({ title: "خطأ", description: error.message, variant: "destructive" });
     } else {
-      setForm({ title: "", description: "", video_url: "", duration_minutes: "" });
+      setForm({ title: "", description: "", video_url: "", duration_minutes: "", pdf_url: "" });
       setOpen(false);
       fetchLectures();
       toast({ title: "تمت الإضافة" });
+    }
+  };
+
+  const handleSavePdf = async () => {
+    if (!pdfLecture) return;
+    const url = pdfUrlInput.trim() || null;
+    const { error } = await supabase.from("lectures").update({ pdf_url: url }).eq("id", pdfLecture.id);
+    if (error) {
+      toast({ title: "خطأ", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: url ? "تم حفظ الرابط" : "تم حذف الرابط" });
+      setPdfLecture(null);
+      setPdfUrlInput("");
+      fetchLectures();
     }
   };
 
@@ -82,6 +100,7 @@ export default function AdminLectures() {
               <div><Label>الوصف</Label><Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></div>
               <div><Label>رابط الفيديو</Label><Input value={form.video_url} onChange={(e) => setForm({ ...form, video_url: e.target.value })} dir="ltr" /></div>
               <div><Label>المدة (بالدقائق)</Label><Input type="number" value={form.duration_minutes} onChange={(e) => setForm({ ...form, duration_minutes: e.target.value })} /></div>
+              <div><Label>رابط ملف PDF (Google Drive) - اختياري</Label><Input value={form.pdf_url} onChange={(e) => setForm({ ...form, pdf_url: e.target.value })} dir="ltr" placeholder="https://drive.google.com/..." /></div>
               <Button onClick={handleAdd} className="w-full">إضافة</Button>
             </div>
           </DialogContent>
@@ -106,9 +125,13 @@ export default function AdminLectures() {
                   <TableCell>{l.duration_minutes || 0} د</TableCell>
                   <TableCell>{new Date(l.created_at).toLocaleDateString("ar")}</TableCell>
                   <TableCell>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                       <Button size="sm" variant="outline" onClick={() => setAssignLecture(l.id)}>
                         <Users className="w-4 h-4 ml-1" />تخصيص
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => { setPdfLecture(l); setPdfUrlInput(l.pdf_url || ""); }}>
+                        {l.pdf_url ? <Pencil className="w-4 h-4 ml-1" /> : <FileText className="w-4 h-4 ml-1" />}
+                        {l.pdf_url ? "تعديل PDF" : "إضافة PDF"}
                       </Button>
                       <Button size="sm" variant="destructive" onClick={() => handleDelete(l.id)}>
                         <Trash2 className="w-4 h-4" />
@@ -128,6 +151,27 @@ export default function AdminLectures() {
       {assignLecture && (
         <AssignStudentsDialog lectureId={assignLecture} onClose={() => { setAssignLecture(null); }} />
       )}
+
+      <Dialog open={!!pdfLecture} onOpenChange={(o) => { if (!o) { setPdfLecture(null); setPdfUrlInput(""); } }}>
+        <DialogContent dir="rtl">
+          <DialogHeader><DialogTitle>رابط ملف PDF للمحاضرة</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>رابط Google Drive</Label>
+              <Input value={pdfUrlInput} onChange={(e) => setPdfUrlInput(e.target.value)} dir="ltr" placeholder="https://drive.google.com/..." />
+              <p className="text-xs text-muted-foreground mt-1">اترك الحقل فارغاً لحذف الرابط</p>
+            </div>
+            <div className="flex gap-2">
+              <Button onClick={handleSavePdf} className="flex-1">حفظ</Button>
+              {pdfLecture?.pdf_url && (
+                <Button variant="destructive" onClick={() => { setPdfUrlInput(""); handleSavePdf(); }}>
+                  <Trash2 className="w-4 h-4 ml-1" />حذف
+                </Button>
+              )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
