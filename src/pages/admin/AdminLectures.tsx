@@ -125,9 +125,13 @@ export default function AdminLectures() {
                   <TableCell>{l.duration_minutes || 0} د</TableCell>
                   <TableCell>{new Date(l.created_at).toLocaleDateString("ar")}</TableCell>
                   <TableCell>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                       <Button size="sm" variant="outline" onClick={() => setAssignLecture(l.id)}>
                         <Users className="w-4 h-4 ml-1" />تخصيص
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => { setPdfLecture(l); setPdfUrlInput(l.pdf_url || ""); }}>
+                        {l.pdf_url ? <Pencil className="w-4 h-4 ml-1" /> : <FileText className="w-4 h-4 ml-1" />}
+                        {l.pdf_url ? "تعديل PDF" : "إضافة PDF"}
                       </Button>
                       <Button size="sm" variant="destructive" onClick={() => handleDelete(l.id)}>
                         <Trash2 className="w-4 h-4" />
