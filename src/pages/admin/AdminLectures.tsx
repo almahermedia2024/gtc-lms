@@ -100,6 +100,7 @@ export default function AdminLectures() {
               <div><Label>الوصف</Label><Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></div>
               <div><Label>رابط الفيديو</Label><Input value={form.video_url} onChange={(e) => setForm({ ...form, video_url: e.target.value })} dir="ltr" /></div>
               <div><Label>المدة (بالدقائق)</Label><Input type="number" value={form.duration_minutes} onChange={(e) => setForm({ ...form, duration_minutes: e.target.value })} /></div>
+              <div><Label>رابط ملف PDF (Google Drive) - اختياري</Label><Input value={form.pdf_url} onChange={(e) => setForm({ ...form, pdf_url: e.target.value })} dir="ltr" placeholder="https://drive.google.com/..." /></div>
               <Button onClick={handleAdd} className="w-full">إضافة</Button>
             </div>
           </DialogContent>
