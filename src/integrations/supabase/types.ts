@@ -81,6 +81,7 @@ export type Database = {
           description: string | null
           duration_minutes: number | null
           id: string
+          pdf_url: string | null
           title: string
           updated_at: string
           video_url: string
@@ -92,6 +93,7 @@ export type Database = {
           description?: string | null
           duration_minutes?: number | null
           id?: string
+          pdf_url?: string | null
           title: string
           updated_at?: string
           video_url: string
@@ -103,6 +105,7 @@ export type Database = {
           description?: string | null
           duration_minutes?: number | null
           id?: string
+          pdf_url?: string | null
           title?: string
           updated_at?: string
           video_url?: string
