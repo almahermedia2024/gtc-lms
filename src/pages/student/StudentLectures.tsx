@@ -5,7 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { VideoPlayer } from "@/components/VideoPlayer";
-import { Play, Clock, CheckCircle, BookOpen, Sparkles, ClipboardList } from "lucide-react";
+import { Play, Clock, CheckCircle, BookOpen, Sparkles, ClipboardList, FileText } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 interface LectureWithProgress {
@@ -14,6 +14,7 @@ interface LectureWithProgress {
   description: string | null;
   video_url: string;
   duration_minutes: number | null;
+  pdf_url: string | null;
   course_id: string | null;
   course_title: string | null;
   watched_seconds: number;
