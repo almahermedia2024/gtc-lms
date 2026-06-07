@@ -9,8 +9,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, Users, FileText, Pencil } from "lucide-react";
+import { Plus, Trash2, Users, FileText, Pencil, ClipboardList } from "lucide-react";
 import { AssignStudentsDialog } from "@/components/AssignStudentsDialog";
+import { LectureQuizManager } from "@/components/LectureQuizManager";
 
 interface Lecture {
   id: string;
@@ -30,6 +31,7 @@ export default function AdminLectures() {
   const [assignLecture, setAssignLecture] = useState<string | null>(null);
   const [pdfLecture, setPdfLecture] = useState<Lecture | null>(null);
   const [pdfUrlInput, setPdfUrlInput] = useState("");
+  const [quizLecture, setQuizLecture] = useState<Lecture | null>(null);
   const [form, setForm] = useState({ title: "", description: "", video_url: "", duration_minutes: "", pdf_url: "" });
 
   const fetchLectures = async () => {
@@ -133,6 +135,9 @@ export default function AdminLectures() {
                         {l.pdf_url ? <Pencil className="w-4 h-4 ml-1" /> : <FileText className="w-4 h-4 ml-1" />}
                         {l.pdf_url ? "تعديل PDF" : "إضافة PDF"}
                       </Button>
+                      <Button size="sm" variant="outline" onClick={() => setQuizLecture(l)}>
+                        <ClipboardList className="w-4 h-4 ml-1" />الكويز
+                      </Button>
                       <Button size="sm" variant="destructive" onClick={() => handleDelete(l.id)}>
                         <Trash2 className="w-4 h-4" />
                       </Button>
@@ -170,6 +175,13 @@ export default function AdminLectures() {
               )}
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!quizLecture} onOpenChange={(o) => { if (!o) setQuizLecture(null); }}>
+        <DialogContent dir="rtl" className="max-w-3xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>إدارة كويز المحاضرة: {quizLecture?.title}</DialogTitle></DialogHeader>
+          {quizLecture && <LectureQuizManager lectureId={quizLecture.id} />}
         </DialogContent>
       </Dialog>
     </div>
