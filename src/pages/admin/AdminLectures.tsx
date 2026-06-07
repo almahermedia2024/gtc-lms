@@ -53,15 +53,30 @@ export default function AdminLectures() {
       description: form.description || null,
       video_url: form.video_url,
       duration_minutes: form.duration_minutes ? parseInt(form.duration_minutes) : 0,
+      pdf_url: form.pdf_url.trim() || null,
       created_by: user?.id,
     });
     if (error) {
       toast({ title: "خطأ", description: error.message, variant: "destructive" });
     } else {
-      setForm({ title: "", description: "", video_url: "", duration_minutes: "" });
+      setForm({ title: "", description: "", video_url: "", duration_minutes: "", pdf_url: "" });
       setOpen(false);
       fetchLectures();
       toast({ title: "تمت الإضافة" });
+    }
+  };
+
+  const handleSavePdf = async () => {
+    if (!pdfLecture) return;
+    const url = pdfUrlInput.trim() || null;
+    const { error } = await supabase.from("lectures").update({ pdf_url: url }).eq("id", pdfLecture.id);
+    if (error) {
+      toast({ title: "خطأ", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: url ? "تم حفظ الرابط" : "تم حذف الرابط" });
+      setPdfLecture(null);
+      setPdfUrlInput("");
+      fetchLectures();
     }
   };
 
