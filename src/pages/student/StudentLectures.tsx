@@ -148,6 +148,7 @@ export default function StudentLectures() {
   }, {});
 
   if (selected) {
+    const canTakeQuiz = selected.completion_percentage >= 90;
     return (
       <div dir="rtl" className="animate-fade-in relative z-10">
         <button onClick={() => setSelected(null)} className="text-primary hover:underline mb-4 text-sm font-medium transition-colors">
@@ -156,6 +157,17 @@ export default function StudentLectures() {
         <h2 className="text-xl font-heading font-bold mb-4">{selected.title}</h2>
         {selected.description && <p className="text-muted-foreground mb-4">{selected.description}</p>}
         <VideoPlayer src={selected.video_url} title={selected.title} onProgress={handleProgress} resumeFrom={selected.watched_seconds} />
+        <div className="mt-4">
+          {canTakeQuiz ? (
+            <Button asChild>
+              <Link to={`/student/lecture-quiz/${selected.id}`}>
+                <ClipboardList className="w-4 h-4 ml-2" />بدء كويز المحاضرة
+              </Link>
+            </Button>
+          ) : (
+            <p className="text-xs text-muted-foreground">أكمل المحاضرة (90%) لفتح الكويز.</p>
+          )}
+        </div>
       </div>
     );
   }
@@ -291,6 +303,20 @@ export default function StudentLectures() {
                             <FileText className="w-4 h-4 ml-2" />
                             تحميل ملف PDF
                           </a>
+                        </Button>
+                      )}
+                      {l.completion_percentage >= 90 && (
+                        <Button
+                          asChild
+                          size="sm"
+                          variant="secondary"
+                          className="w-full mt-2"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <Link to={`/student/lecture-quiz/${l.id}`}>
+                            <ClipboardList className="w-4 h-4 ml-2" />
+                            كويز المحاضرة
+                          </Link>
                         </Button>
                       )}
                     </CardContent>
