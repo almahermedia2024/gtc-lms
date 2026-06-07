@@ -18,6 +18,7 @@ import AdminQuizzes from "./pages/admin/AdminQuizzes";
 import AdminQuizSummary from "./pages/admin/AdminQuizSummary";
 import StudentLectures from "./pages/student/StudentLectures";
 import StudentQuiz from "./pages/student/StudentQuiz";
+import StudentLectureQuiz from "./pages/student/StudentLectureQuiz";
 import NotFound from "./pages/NotFound";
 import { Loader2 } from "lucide-react";
 
@@ -56,6 +57,7 @@ const App = () => (
             <Route path="/student" element={<RequireAuth role="student"><StudentLayout /></RequireAuth>}>
               <Route index element={<StudentLectures />} />
               <Route path="quiz/:courseId" element={<StudentQuiz />} />
+              <Route path="lecture-quiz/:lectureId" element={<StudentLectureQuiz />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
