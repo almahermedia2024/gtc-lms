@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, Users } from "lucide-react";
+import { Plus, Trash2, Users, FileText, Pencil } from "lucide-react";
 import { AssignStudentsDialog } from "@/components/AssignStudentsDialog";
 
 interface Lecture {
@@ -18,6 +18,7 @@ interface Lecture {
   description: string | null;
   video_url: string;
   duration_minutes: number | null;
+  pdf_url: string | null;
   created_at: string;
 }
 
@@ -27,7 +28,9 @@ export default function AdminLectures() {
   const [lectures, setLectures] = useState<Lecture[]>([]);
   const [open, setOpen] = useState(false);
   const [assignLecture, setAssignLecture] = useState<string | null>(null);
-  const [form, setForm] = useState({ title: "", description: "", video_url: "", duration_minutes: "" });
+  const [pdfLecture, setPdfLecture] = useState<Lecture | null>(null);
+  const [pdfUrlInput, setPdfUrlInput] = useState("");
+  const [form, setForm] = useState({ title: "", description: "", video_url: "", duration_minutes: "", pdf_url: "" });
 
   const fetchLectures = async () => {
     const { data } = await supabase.from("lectures").select("*").order("created_at", { ascending: false });
