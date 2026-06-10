@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, type MouseEvent } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -132,6 +132,20 @@ export default function StudentLectures() {
     },
     [user, selected]
   );
+
+  const getPdfDownloadUrl = (url: string) => {
+    const raw = url.trim();
+    const match = raw.match(/\/file\/d\/([^/]+)/) || raw.match(/[?&]id=([^&]+)/);
+    return match ? `https://drive.google.com/uc?export=download&id=${encodeURIComponent(match[1])}` : raw;
+  };
+
+  const handlePdfDownload = (event: MouseEvent<HTMLButtonElement>, url: string) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const href = getPdfDownloadUrl(url);
+    window.open(href, "_blank", "noopener,noreferrer");
+  };
 
   const totalLectures = lectures.length;
   const completedLectures = lectures.filter((l) => l.completion_percentage >= 90).length;
@@ -291,34 +305,19 @@ export default function StudentLectures() {
                       {l.last_watched_at && (
                         <p className="text-xs text-muted-foreground mt-2">آخر مشاهدة: {new Date(l.last_watched_at).toLocaleDateString("ar")}</p>
                       )}
-                      {l.pdf_url && (() => {
-                        const raw = l.pdf_url.trim();
-                        const m = raw.match(/\/file\/d\/([^/]+)/) || raw.match(/[?&]id=([^&]+)/);
-                        const href = m ? `https://drive.google.com/uc?export=download&id=${m[1]}` : raw;
-                        return (
-                          <Button
-                            asChild
-                            size="sm"
-                            variant="outline"
-                            className="w-full mt-3"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <a
-                              href={href}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                e.preventDefault();
-                                window.open(href, "_blank", "noopener,noreferrer");
-                              }}
-                            >
-                              <FileText className="w-4 h-4 ml-2" />
-                              تحميل ملف PDF
-                            </a>
-                          </Button>
-                        );
-                      })()}
+                      {l.pdf_url && (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          className="w-full mt-3"
+                          onPointerDown={(e) => e.stopPropagation()}
+                          onClick={(e) => handlePdfDownload(e, l.pdf_url!)}
+                        >
+                          <FileText className="w-4 h-4 ml-2" />
+                          تحميل ملف PDF
+                        </Button>
+                      )}
                       {l.completion_percentage >= 90 && (
                         <Button
                           asChild
