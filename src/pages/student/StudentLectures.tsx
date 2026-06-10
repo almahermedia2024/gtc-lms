@@ -284,7 +284,8 @@ export default function StudentLectures() {
                 {group.lectures.map((l) => (
                   <Card
                     key={l.id}
-                    className="lecture-card-animated border-border/50"
+                    className="cursor-pointer lecture-card-animated border-border/50"
+                    onClick={() => handleOpenLecture(l)}
                   >
                     <CardHeader className="pb-2">
                       <CardTitle className="text-base font-heading">{l.title}</CardTitle>
@@ -304,21 +305,12 @@ export default function StudentLectures() {
                       {l.last_watched_at && (
                         <p className="text-xs text-muted-foreground mt-2">آخر مشاهدة: {new Date(l.last_watched_at).toLocaleDateString("ar")}</p>
                       )}
-                      <Button
-                        type="button"
-                        size="sm"
-                        className="w-full mt-3"
-                        onClick={() => handleOpenLecture(l)}
-                      >
-                        <Play className="w-4 h-4 ml-2" />
-                        فتح المحاضرة
-                      </Button>
                       {l.pdf_url && (
                         <Button
                           type="button"
                           size="sm"
                           variant="outline"
-                          className="w-full mt-2"
+                          className="w-full mt-3"
                           onPointerDown={(e) => e.stopPropagation()}
                           onClick={(e) => handlePdfDownload(e, l.pdf_url!)}
                         >
