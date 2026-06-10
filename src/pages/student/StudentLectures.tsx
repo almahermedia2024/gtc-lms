@@ -323,19 +323,6 @@ export default function StudentLectures() {
                         <Play className="w-4 h-4 ml-2" />
                         فتح المحاضرة
                       </Button>
-                      {l.pdf_url && (
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          className="w-full mt-2"
-                          onPointerDown={(e) => e.stopPropagation()}
-                          onClick={(e) => handlePdfDownload(e, l.pdf_url!)}
-                        >
-                          <FileText className="w-4 h-4 ml-2" />
-                          تحميل ملف PDF
-                        </Button>
-                      )}
                       {l.completion_percentage >= 90 && (
                         <Button
                           asChild
