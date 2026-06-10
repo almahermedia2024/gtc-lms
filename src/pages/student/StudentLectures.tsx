@@ -171,7 +171,7 @@ export default function StudentLectures() {
         <h2 className="text-xl font-heading font-bold mb-4">{selected.title}</h2>
         {selected.description && <p className="text-muted-foreground mb-4">{selected.description}</p>}
         <VideoPlayer src={selected.video_url} title={selected.title} onProgress={handleProgress} resumeFrom={selected.watched_seconds} />
-        <div className="mt-4 flex flex-wrap items-center gap-2">
+        <div className="mt-4">
           {canTakeQuiz ? (
             <Button asChild>
               <Link to={`/student/lecture-quiz/${selected.id}`}>
@@ -180,16 +180,6 @@ export default function StudentLectures() {
             </Button>
           ) : (
             <p className="text-xs text-muted-foreground">أكمل المحاضرة (90%) لفتح الكويز.</p>
-          )}
-          {selected.pdf_url && (
-            <Button
-              type="button"
-              variant="outline"
-              onClick={(e) => handlePdfDownload(e, selected.pdf_url!)}
-            >
-              <FileText className="w-4 h-4 ml-2" />
-              تحميل ملف PDF
-            </Button>
           )}
         </div>
       </div>
@@ -323,6 +313,19 @@ export default function StudentLectures() {
                         <Play className="w-4 h-4 ml-2" />
                         فتح المحاضرة
                       </Button>
+                      {l.pdf_url && (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          className="w-full mt-2"
+                          onPointerDown={(e) => e.stopPropagation()}
+                          onClick={(e) => handlePdfDownload(e, l.pdf_url!)}
+                        >
+                          <FileText className="w-4 h-4 ml-2" />
+                          تحميل ملف PDF
+                        </Button>
+                      )}
                       {l.completion_percentage >= 90 && (
                         <Button
                           asChild
