@@ -291,20 +291,34 @@ export default function StudentLectures() {
                       {l.last_watched_at && (
                         <p className="text-xs text-muted-foreground mt-2">آخر مشاهدة: {new Date(l.last_watched_at).toLocaleDateString("ar")}</p>
                       )}
-                      {l.pdf_url && (
-                        <Button
-                          asChild
-                          size="sm"
-                          variant="outline"
-                          className="w-full mt-3"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <a href={l.pdf_url} target="_blank" rel="noopener noreferrer">
-                            <FileText className="w-4 h-4 ml-2" />
-                            تحميل ملف PDF
-                          </a>
-                        </Button>
-                      )}
+                      {l.pdf_url && (() => {
+                        const raw = l.pdf_url.trim();
+                        const m = raw.match(/\/file\/d\/([^/]+)/) || raw.match(/[?&]id=([^&]+)/);
+                        const href = m ? `https://drive.google.com/uc?export=download&id=${m[1]}` : raw;
+                        return (
+                          <Button
+                            asChild
+                            size="sm"
+                            variant="outline"
+                            className="w-full mt-3"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <a
+                              href={href}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                e.preventDefault();
+                                window.open(href, "_blank", "noopener,noreferrer");
+                              }}
+                            >
+                              <FileText className="w-4 h-4 ml-2" />
+                              تحميل ملف PDF
+                            </a>
+                          </Button>
+                        );
+                      })()}
                       {l.completion_percentage >= 90 && (
                         <Button
                           asChild
