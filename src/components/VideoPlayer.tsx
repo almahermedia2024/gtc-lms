@@ -212,10 +212,17 @@ function NativePlayer({ src, title, onProgress, resumeFrom }: VideoPlayerProps) 
   const maxWatchedRef = useRef(0);
   const progressInterval = useRef<number>();
 
+  const flushProgress = useCallback(() => {
+    if (onProgress && videoRef.current) {
+      try { onProgress(maxWatchedRef.current, videoRef.current.duration || 0); } catch {}
+    }
+  }, [onProgress]);
+
   const togglePlay = () => {
     const v = videoRef.current;
     if (!v) return;
-    if (v.paused) { v.play(); setPlaying(true); } else { v.pause(); setPlaying(false); }
+    if (v.paused) { v.play(); setPlaying(true); }
+    else { v.pause(); setPlaying(false); flushProgress(); }
   };
 
   const handleTimeUpdate = useCallback(() => {
