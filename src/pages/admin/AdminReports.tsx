@@ -6,6 +6,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
+import { Download } from "lucide-react";
+import * as XLSX from "xlsx";
 
 interface ProgressRow {
   student_id: string;
@@ -128,21 +131,44 @@ export default function AdminReports() {
     return dateB - dateA;
   });
 
+  const handleExportExcel = () => {
+    const data = filtered.map((r) => ({
+      "الطالب": r.student_name,
+      "الكورس": r.course_title,
+      "المحاضرة": r.lecture_title,
+      "وقت المشاهدة (دقيقة)": Math.round(r.watched_seconds / 60),
+      "نسبة الإكمال %": Math.round(r.completion_percentage),
+      "مرات الفتح": r.open_count,
+      "آخر مشاهدة": r.last_watched_at ? new Date(r.last_watched_at).toLocaleString("ar") : "—",
+    }));
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "تقدم المشاهدة");
+    const fileName = `تقرير_تقدم_المشاهدة_${new Date().toISOString().slice(0, 10)}.xlsx`;
+    XLSX.writeFile(wb, fileName);
+  };
+
   return (
     <div dir="rtl">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-heading font-bold">التقارير والإحصائيات</h1>
-        <Select value={courseFilter} onValueChange={setCourseFilter}>
-          <SelectTrigger className="w-48">
-            <SelectValue placeholder="كل الكورسات" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">كل الكورسات</SelectItem>
-            {courses.map((c) => (
-              <SelectItem key={c.id} value={c.title}>{c.title}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+          <Button onClick={handleExportExcel} variant="outline" size="sm" disabled={!filtered.length}>
+            <Download className="w-4 h-4" />
+            تحميل التقرير (Excel)
+          </Button>
+          <Select value={courseFilter} onValueChange={setCourseFilter}>
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder="كل الكورسات" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">كل الكورسات</SelectItem>
+              {courses.map((c) => (
+                <SelectItem key={c.id} value={c.title}>{c.title}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       <Tabs defaultValue="courses" dir="rtl">
