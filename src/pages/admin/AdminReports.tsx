@@ -132,7 +132,9 @@ export default function AdminReports() {
   });
 
   const handleExportExcel = () => {
-    const data = filtered.map((r) => ({
+    const wb = XLSX.utils.book_new();
+
+    const progressData = filtered.map((r) => ({
       "الطالب": r.student_name,
       "الكورس": r.course_title,
       "المحاضرة": r.lecture_title,
@@ -141,11 +143,35 @@ export default function AdminReports() {
       "مرات الفتح": r.open_count,
       "آخر مشاهدة": r.last_watched_at ? new Date(r.last_watched_at).toLocaleString("ar") : "—",
     }));
-    const ws = XLSX.utils.json_to_sheet(data);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "تقدم المشاهدة");
-    const fileName = `تقرير_تقدم_المشاهدة_${new Date().toISOString().slice(0, 10)}.xlsx`;
-    XLSX.writeFile(wb, fileName);
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(progressData.length ? progressData : [{ "ملاحظة": "لا توجد بيانات" }]), "Progress");
+
+    const coursesData = courseOverviews.map((c) => ({
+      "الكورس": c.title,
+      "عدد المحاضرات": c.lectureCount,
+      "عدد الطلاب": c.studentCount,
+      "متوسط الإكمال %": c.avgCompletion,
+    }));
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(coursesData.length ? coursesData : [{ "ملاحظة": "لا توجد بيانات" }]), "Courses");
+
+    const studentsData = studentOverviews.map((s) => ({
+      "الطالب": s.name,
+      "عدد الكورسات": s.courseCount,
+      "عدد المحاضرات": s.lectureCount,
+      "وقت المشاهدة (دقيقة)": s.totalMinutes,
+      "متوسط الإكمال %": s.avgCompletion,
+    }));
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(studentsData.length ? studentsData : [{ "ملاحظة": "لا توجد بيانات" }]), "Students");
+
+    const wbout = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+    const blob = new Blob([wbout], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `LMS_Report_${new Date().toISOString().slice(0, 10)}.xlsx`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
 
   return (
