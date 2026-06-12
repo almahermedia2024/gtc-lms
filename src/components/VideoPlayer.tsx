@@ -302,7 +302,7 @@ function NativePlayer({ src, title, onProgress, resumeFrom }: VideoPlayerProps) 
             maxWatchedRef.current = resumeFrom;
             try { v.currentTime = resumeFrom; } catch {}
           }
-        }} onEnded={() => setPlaying(false)}
+        }} onEnded={() => { setPlaying(false); flushProgress(); }} onPause={flushProgress}
         controlsList="nodownload noplaybackrate" disablePictureInPicture playsInline />
       <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3 opacity-0 group-hover:opacity-100 transition-opacity">
         <div className="relative h-1.5 bg-white/20 rounded cursor-pointer mb-3" onClick={handleSeekBar}>
