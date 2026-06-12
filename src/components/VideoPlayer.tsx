@@ -90,6 +90,15 @@ function YouTubePlayer({ videoId, title, onProgress, resumeFrom }: { videoId: st
             const YT2 = (window as any).YT;
             setPlaying(e.data === YT2.PlayerState.PLAYING);
             if (e.data === YT2.PlayerState.PLAYING) player.setPlaybackRate(1);
+            // Save progress on pause/end so exits don't lose minutes between 30s ticks
+            if (
+              e.data === YT2.PlayerState.PAUSED ||
+              e.data === YT2.PlayerState.ENDED
+            ) {
+              if (onProgress) {
+                try { onProgress(maxWatchedRef.current, player.getDuration() || 0); } catch {}
+              }
+            }
           },
         },
       });
@@ -203,10 +212,17 @@ function NativePlayer({ src, title, onProgress, resumeFrom }: VideoPlayerProps) 
   const maxWatchedRef = useRef(0);
   const progressInterval = useRef<number>();
 
+  const flushProgress = useCallback(() => {
+    if (onProgress && videoRef.current) {
+      try { onProgress(maxWatchedRef.current, videoRef.current.duration || 0); } catch {}
+    }
+  }, [onProgress]);
+
   const togglePlay = () => {
     const v = videoRef.current;
     if (!v) return;
-    if (v.paused) { v.play(); setPlaying(true); } else { v.pause(); setPlaying(false); }
+    if (v.paused) { v.play(); setPlaying(true); }
+    else { v.pause(); setPlaying(false); flushProgress(); }
   };
 
   const handleTimeUpdate = useCallback(() => {
@@ -286,7 +302,7 @@ function NativePlayer({ src, title, onProgress, resumeFrom }: VideoPlayerProps) 
             maxWatchedRef.current = resumeFrom;
             try { v.currentTime = resumeFrom; } catch {}
           }
-        }} onEnded={() => setPlaying(false)}
+        }} onEnded={() => { setPlaying(false); flushProgress(); }} onPause={flushProgress}
         controlsList="nodownload noplaybackrate" disablePictureInPicture playsInline />
       <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3 opacity-0 group-hover:opacity-100 transition-opacity">
         <div className="relative h-1.5 bg-white/20 rounded cursor-pointer mb-3" onClick={handleSeekBar}>

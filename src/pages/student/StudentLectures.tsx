@@ -87,15 +87,29 @@ export default function StudentLectures() {
   }, [user]);
 
   const handleOpenLecture = async (lecture: LectureWithProgress) => {
-    setSelected(lecture);
-    if (!user) return;
+    if (!user) {
+      setSelected(lecture);
+      return;
+    }
 
+    // Fetch latest progress to ensure we resume from the most recent saved position
     const { data: existing } = await supabase
       .from("watch_progress")
       .select("*")
       .eq("student_id", user.id)
       .eq("lecture_id", lecture.id)
       .maybeSingle();
+
+    const freshLecture: LectureWithProgress = {
+      ...lecture,
+      watched_seconds: existing?.watched_seconds ?? lecture.watched_seconds ?? 0,
+      completion_percentage: existing?.completion_percentage ?? lecture.completion_percentage ?? 0,
+      open_count: existing?.open_count ?? lecture.open_count ?? 0,
+      last_watched_at: existing?.last_watched_at ?? lecture.last_watched_at ?? null,
+    };
+    setSelected(freshLecture);
+    // Reflect fresh values in the list as well
+    setLectures((prev) => prev.map((l) => (l.id === lecture.id ? { ...l, ...freshLecture } : l)));
 
     if (existing) {
       await supabase
@@ -116,19 +130,32 @@ export default function StudentLectures() {
     async (watchedSeconds: number, totalDuration: number) => {
       if (!user || !selected) return;
       const pct = totalDuration > 0 ? (watchedSeconds / totalDuration) * 100 : 0;
-      await supabase
+      const clampedPct = Math.min(pct, 100);
+      const { error } = await supabase
         .from("watch_progress")
         .upsert(
           {
             student_id: user.id,
             lecture_id: selected.id,
-            watched_seconds: watchedSeconds,
-            total_duration: totalDuration,
-            completion_percentage: Math.min(pct, 100),
+            watched_seconds: Math.floor(watchedSeconds),
+            total_duration: Math.floor(totalDuration),
+            completion_percentage: clampedPct,
             last_watched_at: new Date().toISOString(),
           },
           { onConflict: "student_id,lecture_id" }
         );
+      if (error) {
+        console.error("Failed to save watch progress:", error);
+        return;
+      }
+      // Keep local state in sync so reopening within the same session resumes correctly
+      setLectures((prev) =>
+        prev.map((l) =>
+          l.id === selected.id
+            ? { ...l, watched_seconds: Math.floor(watchedSeconds), completion_percentage: clampedPct, last_watched_at: new Date().toISOString() }
+            : l
+        )
+      );
     },
     [user, selected]
   );
