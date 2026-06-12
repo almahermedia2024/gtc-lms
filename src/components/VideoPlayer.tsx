@@ -90,6 +90,15 @@ function YouTubePlayer({ videoId, title, onProgress, resumeFrom }: { videoId: st
             const YT2 = (window as any).YT;
             setPlaying(e.data === YT2.PlayerState.PLAYING);
             if (e.data === YT2.PlayerState.PLAYING) player.setPlaybackRate(1);
+            // Save progress on pause/end so exits don't lose minutes between 30s ticks
+            if (
+              e.data === YT2.PlayerState.PAUSED ||
+              e.data === YT2.PlayerState.ENDED
+            ) {
+              if (onProgress) {
+                try { onProgress(maxWatchedRef.current, player.getDuration() || 0); } catch {}
+              }
+            }
           },
         },
       });
