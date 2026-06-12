@@ -6,6 +6,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
+import { Download } from "lucide-react";
+import * as XLSX from "xlsx";
 
 interface ProgressRow {
   student_id: string;
