@@ -23,9 +23,17 @@ interface LectureWithProgress {
   last_watched_at: string | null;
 }
 
+interface CourseResource {
+  id: string;
+  course_id: string;
+  title: string;
+  url: string;
+}
+
 export default function StudentLectures() {
   const { user } = useAuth();
   const [lectures, setLectures] = useState<LectureWithProgress[]>([]);
+  const [resources, setResources] = useState<CourseResource[]>([]);
   const [selected, setSelected] = useState<LectureWithProgress | null>(null);
   const [studentName, setStudentName] = useState("");
 
@@ -82,6 +90,16 @@ export default function StudentLectures() {
           };
         })
       );
+
+      if (courseIds.length > 0) {
+        const { data: res } = await supabase
+          .from("course_resources")
+          .select("id, course_id, title, url")
+          .in("course_id", courseIds)
+          .eq("is_visible", true)
+          .order("display_order");
+        setResources((res as CourseResource[]) || []);
+      }
     };
     fetchData();
   }, [user]);
