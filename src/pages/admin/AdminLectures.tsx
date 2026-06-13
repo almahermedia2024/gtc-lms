@@ -66,19 +66,6 @@ export default function AdminLectures() {
     }
   };
 
-  const handleSavePdf = async () => {
-    if (!pdfLecture) return;
-    const url = pdfUrlInput.trim() || null;
-    const { error } = await supabase.from("lectures").update({ pdf_url: url }).eq("id", pdfLecture.id);
-    if (error) {
-      toast({ title: "خطأ", description: error.message, variant: "destructive" });
-    } else {
-      toast({ title: url ? "تم حفظ الرابط" : "تم حذف الرابط" });
-      setPdfLecture(null);
-      setPdfUrlInput("");
-      fetchLectures();
-    }
-  };
 
   const handleDelete = async (id: string) => {
     await supabase.from("lectures").delete().eq("id", id);
