@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, Users, FileText, Pencil, ClipboardList } from "lucide-react";
+import { Plus, Trash2, Users, ClipboardList } from "lucide-react";
 import { AssignStudentsDialog } from "@/components/AssignStudentsDialog";
 import { LectureQuizManager } from "@/components/LectureQuizManager";
 
