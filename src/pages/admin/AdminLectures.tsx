@@ -29,8 +29,6 @@ export default function AdminLectures() {
   const [lectures, setLectures] = useState<Lecture[]>([]);
   const [open, setOpen] = useState(false);
   const [assignLecture, setAssignLecture] = useState<string | null>(null);
-  const [pdfLecture, setPdfLecture] = useState<Lecture | null>(null);
-  const [pdfUrlInput, setPdfUrlInput] = useState("");
   const [quizLecture, setQuizLecture] = useState<Lecture | null>(null);
   const [form, setForm] = useState({ title: "", description: "", video_url: "", duration_minutes: "", pdf_url: "" });
 
