@@ -12,6 +12,7 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminLectures from "./pages/admin/AdminLectures";
 import AdminStudents from "./pages/admin/AdminStudents";
 import AdminCourses from "./pages/admin/AdminCourses";
+import AdminCourseResources from "./pages/admin/AdminCourseResources";
 import AdminReports from "./pages/admin/AdminReports";
 import AdminAccount from "./pages/admin/AdminAccount";
 import AdminQuizzes from "./pages/admin/AdminQuizzes";
@@ -48,6 +49,7 @@ const App = () => (
               <Route index element={<AdminDashboard />} />
               <Route path="courses" element={<AdminCourses />} />
               <Route path="lectures" element={<AdminLectures />} />
+              <Route path="resources" element={<AdminCourseResources />} />
               <Route path="students" element={<AdminStudents />} />
               <Route path="reports" element={<AdminReports />} />
               <Route path="quizzes" element={<AdminQuizzes />} />
