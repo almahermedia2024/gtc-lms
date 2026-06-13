@@ -138,26 +138,6 @@ export default function AdminLectures() {
         <AssignStudentsDialog lectureId={assignLecture} onClose={() => { setAssignLecture(null); }} />
       )}
 
-      <Dialog open={!!pdfLecture} onOpenChange={(o) => { if (!o) { setPdfLecture(null); setPdfUrlInput(""); } }}>
-        <DialogContent dir="rtl">
-          <DialogHeader><DialogTitle>رابط ملف PDF للمحاضرة</DialogTitle></DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label>رابط Google Drive</Label>
-              <Input value={pdfUrlInput} onChange={(e) => setPdfUrlInput(e.target.value)} dir="ltr" placeholder="https://drive.google.com/..." />
-              <p className="text-xs text-muted-foreground mt-1">اترك الحقل فارغاً لحذف الرابط</p>
-            </div>
-            <div className="flex gap-2">
-              <Button onClick={handleSavePdf} className="flex-1">حفظ</Button>
-              {pdfLecture?.pdf_url && (
-                <Button variant="destructive" onClick={() => { setPdfUrlInput(""); handleSavePdf(); }}>
-                  <Trash2 className="w-4 h-4 ml-1" />حذف
-                </Button>
-              )}
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
 
       <Dialog open={!!quizLecture} onOpenChange={(o) => { if (!o) setQuizLecture(null); }}>
         <DialogContent dir="rtl" className="max-w-3xl max-h-[85vh] overflow-y-auto">
