@@ -325,6 +325,28 @@ export default function StudentLectures() {
                   </Badge>
                 )}
               </div>
+              {isRealCourse && resources.filter(r => r.course_id === courseId).length > 0 && (
+                <div className="mb-4 p-3 rounded-lg border border-border/50 bg-card/50">
+                  <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1">
+                    <FileText className="w-3.5 h-3.5" /> ملفات الكورس
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {resources.filter(r => r.course_id === courseId).map(r => (
+                      <Button
+                        key={r.id}
+                        asChild
+                        size="sm"
+                        variant="outline"
+                      >
+                        <a href={r.url} target="_blank" rel="noopener noreferrer">
+                          <FileText className="w-3.5 h-3.5 ml-1" />
+                          {r.title}
+                        </a>
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              )}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 stagger-children">
                 {group.lectures.map((l) => (
                   <Card
