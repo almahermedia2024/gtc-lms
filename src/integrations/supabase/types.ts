@@ -14,6 +14,50 @@ export type Database = {
   }
   public: {
     Tables: {
+      course_resources: {
+        Row: {
+          course_id: string
+          created_at: string
+          created_by: string | null
+          display_order: number
+          id: string
+          is_visible: boolean
+          title: string
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          created_by?: string | null
+          display_order?: number
+          id?: string
+          is_visible?: boolean
+          title: string
+          updated_at?: string
+          url: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          created_by?: string | null
+          display_order?: number
+          id?: string
+          is_visible?: boolean
+          title?: string
+          updated_at?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_resources_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       course_students: {
         Row: {
           course_id: string
