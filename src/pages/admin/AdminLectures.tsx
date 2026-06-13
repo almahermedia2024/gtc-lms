@@ -116,10 +116,6 @@ export default function AdminLectures() {
                       <Button size="sm" variant="outline" onClick={() => setAssignLecture(l.id)}>
                         <Users className="w-4 h-4 ml-1" />تخصيص
                       </Button>
-                      <Button size="sm" variant="outline" onClick={() => { setPdfLecture(l); setPdfUrlInput(l.pdf_url || ""); }}>
-                        {l.pdf_url ? <Pencil className="w-4 h-4 ml-1" /> : <FileText className="w-4 h-4 ml-1" />}
-                        {l.pdf_url ? "تعديل PDF" : "إضافة PDF"}
-                      </Button>
                       <Button size="sm" variant="outline" onClick={() => setQuizLecture(l)}>
                         <ClipboardList className="w-4 h-4 ml-1" />الكويز
                       </Button>
