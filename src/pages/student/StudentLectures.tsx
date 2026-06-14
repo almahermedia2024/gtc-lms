@@ -178,19 +178,6 @@ export default function StudentLectures() {
     [user, selected]
   );
 
-  const getPdfDownloadUrl = (url: string) => {
-    const raw = url.trim();
-    const match = raw.match(/\/file\/d\/([^/]+)/) || raw.match(/[?&]id=([^&]+)/);
-    return match ? `https://drive.google.com/uc?export=download&id=${encodeURIComponent(match[1])}` : raw;
-  };
-
-  const handlePdfDownload = (event: MouseEvent<HTMLButtonElement>, url: string) => {
-    event.preventDefault();
-    event.stopPropagation();
-
-    const href = getPdfDownloadUrl(url);
-    window.open(href, "_blank", "noopener,noreferrer");
-  };
 
   const totalLectures = lectures.length;
   const completedLectures = lectures.filter((l) => l.completion_percentage >= 90).length;
