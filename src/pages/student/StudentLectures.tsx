@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, type MouseEvent } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
