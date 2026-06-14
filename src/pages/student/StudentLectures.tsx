@@ -359,19 +359,6 @@ export default function StudentLectures() {
                       {l.last_watched_at && (
                         <p className="text-xs text-muted-foreground mt-2">آخر مشاهدة: {new Date(l.last_watched_at).toLocaleDateString("ar")}</p>
                       )}
-                      {l.pdf_url && (
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          className="w-full mt-3"
-                          onPointerDown={(e) => e.stopPropagation()}
-                          onClick={(e) => handlePdfDownload(e, l.pdf_url!)}
-                        >
-                          <FileText className="w-4 h-4 ml-2" />
-                          تحميل ملف PDF
-                        </Button>
-                      )}
                       {l.completion_percentage >= 90 && (
                         <Button
                           asChild
