@@ -5,8 +5,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { VideoPlayer } from "@/components/VideoPlayer";
-import { Play, Clock, CheckCircle, BookOpen, Sparkles, ClipboardList, FileText } from "lucide-react";
+import { Play, Clock, CheckCircle, BookOpen, Sparkles, ClipboardList, FileText, Lock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
 
 interface LectureWithProgress {
   id: string;
@@ -15,6 +16,7 @@ interface LectureWithProgress {
   video_url: string;
   duration_minutes: number | null;
   pdf_url: string | null;
+  is_locked: boolean;
   course_id: string | null;
   course_title: string | null;
   watched_seconds: number;
@@ -32,6 +34,7 @@ interface CourseResource {
 
 export default function StudentLectures() {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [lectures, setLectures] = useState<LectureWithProgress[]>([]);
   const [resources, setResources] = useState<CourseResource[]>([]);
   const [selected, setSelected] = useState<LectureWithProgress | null>(null);
@@ -105,6 +108,10 @@ export default function StudentLectures() {
   }, [user]);
 
   const handleOpenLecture = async (lecture: LectureWithProgress) => {
+    if (lecture.is_locked) {
+      toast({ title: "محاضرة مقفلة", description: "هذه المحاضرة مقفلة من قبل الإدارة", variant: "destructive" });
+      return;
+    }
     if (!user) {
       setSelected(lecture);
       return;
@@ -338,13 +345,19 @@ export default function StudentLectures() {
                 {group.lectures.map((l) => (
                   <Card
                     key={l.id}
-                    className="cursor-pointer lecture-card-animated border-border/50"
+                    className={`lecture-card-animated border-border/50 ${l.is_locked ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer'}`}
                     onClick={() => handleOpenLecture(l)}
                   >
                     <CardHeader className="pb-2">
-                      <CardTitle className="text-base font-heading">{l.title}</CardTitle>
+                      <CardTitle className="text-base font-heading flex items-center gap-2">
+                        {l.is_locked && <Lock className="w-4 h-4 text-destructive" />}
+                        <span>{l.title}</span>
+                      </CardTitle>
                     </CardHeader>
                     <CardContent>
+                      {l.is_locked && (
+                        <Badge variant="destructive" className="mb-2 text-xs">مقفلة</Badge>
+                      )}
                       {l.description && <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{l.description}</p>}
                       <div className="flex items-center gap-4 text-xs text-muted-foreground">
                         <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" />{l.duration_minutes || 0} د</span>
