@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, Users, ClipboardList } from "lucide-react";
+import { Plus, Trash2, Users, ClipboardList, Lock, Unlock } from "lucide-react";
 import { AssignStudentsDialog } from "@/components/AssignStudentsDialog";
 import { LectureQuizManager } from "@/components/LectureQuizManager";
 
@@ -20,6 +20,7 @@ interface Lecture {
   video_url: string;
   duration_minutes: number | null;
   pdf_url: string | null;
+  is_locked: boolean;
   created_at: string;
 }
 
@@ -72,6 +73,19 @@ export default function AdminLectures() {
     fetchLectures();
   };
 
+  const handleToggleLock = async (l: Lecture) => {
+    const { error } = await supabase
+      .from("lectures")
+      .update({ is_locked: !l.is_locked })
+      .eq("id", l.id);
+    if (error) {
+      toast({ title: "خطأ", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: !l.is_locked ? "تم قفل المحاضرة" : "تم فتح المحاضرة" });
+      fetchLectures();
+    }
+  };
+
   return (
     <div dir="rtl">
       <div className="flex items-center justify-between mb-6">
@@ -108,7 +122,12 @@ export default function AdminLectures() {
             <TableBody>
               {lectures.map((l) => (
                 <TableRow key={l.id}>
-                  <TableCell className="font-medium">{l.title}</TableCell>
+                  <TableCell className="font-medium">
+                    <div className="flex items-center gap-2">
+                      {l.is_locked && <Lock className="w-4 h-4 text-destructive" />}
+                      <span>{l.title}</span>
+                    </div>
+                  </TableCell>
                   <TableCell>{l.duration_minutes || 0} د</TableCell>
                   <TableCell>{new Date(l.created_at).toLocaleDateString("ar")}</TableCell>
                   <TableCell>
@@ -118,6 +137,17 @@ export default function AdminLectures() {
                       </Button>
                       <Button size="sm" variant="outline" onClick={() => setQuizLecture(l)}>
                         <ClipboardList className="w-4 h-4 ml-1" />الكويز
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant={l.is_locked ? "default" : "secondary"}
+                        onClick={() => handleToggleLock(l)}
+                      >
+                        {l.is_locked ? (
+                          <><Unlock className="w-4 h-4 ml-1" />فتح</>
+                        ) : (
+                          <><Lock className="w-4 h-4 ml-1" />قفل</>
+                        )}
                       </Button>
                       <Button size="sm" variant="destructive" onClick={() => handleDelete(l.id)}>
                         <Trash2 className="w-4 h-4" />
