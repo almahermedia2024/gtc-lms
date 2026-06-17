@@ -240,6 +240,175 @@ export type Database = {
           },
         ]
       }
+      practical_attempts: {
+        Row: {
+          attempts_count: number
+          checkpoint_id: string
+          completed_at: string | null
+          created_at: string
+          id: string
+          is_correct: boolean
+          last_answer: Json | null
+          score_earned: number
+          student_id: string
+          updated_at: string
+          video_id: string
+        }
+        Insert: {
+          attempts_count?: number
+          checkpoint_id: string
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          is_correct?: boolean
+          last_answer?: Json | null
+          score_earned?: number
+          student_id: string
+          updated_at?: string
+          video_id: string
+        }
+        Update: {
+          attempts_count?: number
+          checkpoint_id?: string
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          is_correct?: boolean
+          last_answer?: Json | null
+          score_earned?: number
+          student_id?: string
+          updated_at?: string
+          video_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "practical_attempts_checkpoint_id_fkey"
+            columns: ["checkpoint_id"]
+            isOneToOne: false
+            referencedRelation: "practical_checkpoints"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "practical_attempts_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "practical_videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      practical_checkpoints: {
+        Row: {
+          attempts_allowed: number
+          continue_from: number | null
+          correct_answer: Json
+          correct_feedback: string | null
+          created_at: string
+          id: string
+          options: Json
+          order_index: number
+          question_text: string
+          question_type: Database["public"]["Enums"]["practical_question_type"]
+          replay_from: number
+          score: number
+          stop_time: number
+          updated_at: string
+          video_id: string
+          wrong_feedback: string | null
+        }
+        Insert: {
+          attempts_allowed?: number
+          continue_from?: number | null
+          correct_answer: Json
+          correct_feedback?: string | null
+          created_at?: string
+          id?: string
+          options?: Json
+          order_index?: number
+          question_text: string
+          question_type: Database["public"]["Enums"]["practical_question_type"]
+          replay_from?: number
+          score?: number
+          stop_time: number
+          updated_at?: string
+          video_id: string
+          wrong_feedback?: string | null
+        }
+        Update: {
+          attempts_allowed?: number
+          continue_from?: number | null
+          correct_answer?: Json
+          correct_feedback?: string | null
+          created_at?: string
+          id?: string
+          options?: Json
+          order_index?: number
+          question_text?: string
+          question_type?: Database["public"]["Enums"]["practical_question_type"]
+          replay_from?: number
+          score?: number
+          stop_time?: number
+          updated_at?: string
+          video_id?: string
+          wrong_feedback?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "practical_checkpoints_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "practical_videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      practical_videos: {
+        Row: {
+          course_id: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_locked: boolean
+          order_index: number
+          title: string
+          updated_at: string
+          youtube_url: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_locked?: boolean
+          order_index?: number
+          title: string
+          updated_at?: string
+          youtube_url: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_locked?: boolean
+          order_index?: number
+          title?: string
+          updated_at?: string
+          youtube_url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "practical_videos_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -538,6 +707,32 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_practical_checkpoints_for_student: {
+        Args: { _video_id: string }
+        Returns: {
+          attempts_allowed: number
+          id: string
+          options: Json
+          order_index: number
+          question_text: string
+          question_type: Database["public"]["Enums"]["practical_question_type"]
+          score: number
+          stop_time: number
+          video_id: string
+        }[]
+      }
+      get_practical_report: {
+        Args: { _video_id: string }
+        Returns: {
+          answered_checkpoints: number
+          correct_count: number
+          max_score: number
+          total_attempts: number
+          total_checkpoints: number
+          total_score: number
+          wrong_count: number
+        }[]
+      }
       get_quiz_options_for_student: {
         Args: { _course_id: string }
         Returns: {
@@ -581,6 +776,19 @@ export type Database = {
         }
         Returns: boolean
       }
+      submit_practical_answer: {
+        Args: { _answer: Json; _checkpoint_id: string }
+        Returns: {
+          attempts_allowed: number
+          attempts_used: number
+          continue_from: number
+          exhausted: boolean
+          feedback: string
+          is_correct: boolean
+          replay_from: number
+          score_earned: number
+        }[]
+      }
       submit_quiz_attempt: {
         Args: { _answers: Json; _course_id: string }
         Returns: {
@@ -593,6 +801,11 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "student"
+      practical_question_type:
+        | "multiple_choice"
+        | "true_false"
+        | "order_steps"
+        | "find_error"
       question_type: "single" | "multiple" | "true_false"
     }
     CompositeTypes: {
@@ -722,6 +935,12 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "student"],
+      practical_question_type: [
+        "multiple_choice",
+        "true_false",
+        "order_steps",
+        "find_error",
+      ],
       question_type: ["single", "multiple", "true_false"],
     },
   },

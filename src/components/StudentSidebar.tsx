@@ -1,4 +1,4 @@
-import { Video, LogOut } from "lucide-react";
+import { Video, LogOut, Youtube } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -32,6 +32,14 @@ export function StudentSidebar() {
                   <NavLink to="/student" end className="hover:bg-sidebar-accent" activeClassName="bg-sidebar-accent text-primary font-medium">
                     <Video className="ml-2 h-4 w-4" />
                     {!collapsed && <span>المحاضرات</span>}
+                  </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <NavLink to="/student/practical" className="hover:bg-sidebar-accent" activeClassName="bg-sidebar-accent text-primary font-medium">
+                    <Youtube className="ml-2 h-4 w-4" />
+                    {!collapsed && <span>التدريب العملي</span>}
                   </NavLink>
                 </SidebarMenuButton>
               </SidebarMenuItem>
