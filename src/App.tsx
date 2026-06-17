@@ -20,6 +20,10 @@ import AdminQuizSummary from "./pages/admin/AdminQuizSummary";
 import StudentLectures from "./pages/student/StudentLectures";
 import StudentQuiz from "./pages/student/StudentQuiz";
 import StudentLectureQuiz from "./pages/student/StudentLectureQuiz";
+import AdminPractical from "./pages/admin/AdminPractical";
+import AdminPracticalCheckpoints from "./pages/admin/AdminPracticalCheckpoints";
+import StudentPractical from "./pages/student/StudentPractical";
+import StudentPracticalPlayer from "./pages/student/StudentPracticalPlayer";
 import NotFound from "./pages/NotFound";
 import { Loader2 } from "lucide-react";
 
@@ -54,12 +58,16 @@ const App = () => (
               <Route path="reports" element={<AdminReports />} />
               <Route path="quizzes" element={<AdminQuizzes />} />
               <Route path="quiz-summary" element={<AdminQuizSummary />} />
+              <Route path="practical" element={<AdminPractical />} />
+              <Route path="practical/:videoId" element={<AdminPracticalCheckpoints />} />
               <Route path="account" element={<AdminAccount />} />
             </Route>
             <Route path="/student" element={<RequireAuth role="student"><StudentLayout /></RequireAuth>}>
               <Route index element={<StudentLectures />} />
               <Route path="quiz/:courseId" element={<StudentQuiz />} />
               <Route path="lecture-quiz/:lectureId" element={<StudentLectureQuiz />} />
+              <Route path="practical" element={<StudentPractical />} />
+              <Route path="practical/:videoId" element={<StudentPracticalPlayer />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
