@@ -51,6 +51,20 @@ Deno.serve(async (req) => {
 
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
+    // Safety: refuse to delete admin accounts via this endpoint
+    const { data: targetRole } = await adminClient
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user_id)
+      .eq("role", "admin")
+      .maybeSingle();
+    if (targetRole) {
+      return new Response(
+        JSON.stringify({ error: "لا يمكن حذف حساب مسؤول من هذه الصفحة" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
     await adminClient.from("watch_progress").delete().eq("student_id", user_id);
     await adminClient.from("student_lectures").delete().eq("student_id", user_id);
     await adminClient.from("course_students").delete().eq("student_id", user_id);
