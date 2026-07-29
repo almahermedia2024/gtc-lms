@@ -25,6 +25,7 @@ import AdminPracticalCheckpoints from "./pages/admin/AdminPracticalCheckpoints";
 import StudentPractical from "./pages/student/StudentPractical";
 import StudentPracticalPlayer from "./pages/student/StudentPracticalPlayer";
 import NotFound from "./pages/NotFound";
+import OAuthConsent from "./pages/OAuthConsent";
 import { Loader2 } from "lucide-react";
 
 const queryClient = new QueryClient({
@@ -49,6 +50,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
             <Route path="/admin" element={<RequireAuth role="admin"><AdminLayout /></RequireAuth>}>
               <Route index element={<AdminDashboard />} />
               <Route path="courses" element={<AdminCourses />} />
