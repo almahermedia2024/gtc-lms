@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, Loader2, Pencil, ArrowRight, Clock } from "lucide-react";
+import { Plus, Trash2, Loader2, Pencil, ArrowRight, Clock, ArrowUp, ArrowDown } from "lucide-react";
+import { cn } from "@/lib/utils";
 import type { QuestionType, OptionItem } from "@/components/practical/QuestionRenderer";
 
 interface Video { id: string; title: string; youtube_url: string; }
@@ -36,6 +37,18 @@ const emptyForm = () => ({
 function fmt(s: number) {
   const m = Math.floor(s / 60); const r = Math.floor(s % 60);
   return `${m}:${String(r).padStart(2, "0")}`;
+}
+
+function Section({ index, title, children }: { index: string; title: string; children: ReactNode }) {
+  return (
+    <div className="rounded-lg border border-border/50 bg-card/40 p-4 space-y-3">
+      <div className="flex items-center gap-2 pb-1 border-b border-border/40">
+        <span className="w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center shrink-0">{index}</span>
+        <h4 className="text-sm font-heading font-bold">{title}</h4>
+      </div>
+      {children}
+    </div>
+  );
 }
 
 export default function AdminPracticalCheckpoints() {
