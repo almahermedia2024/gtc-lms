@@ -233,8 +233,6 @@ export default function AdminPracticalCheckpoints() {
         <DialogContent dir="rtl" className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editing ? "تعديل نقطة التوقف" : "إضافة نقطة توقف"}</DialogTitle>
-            <DialogDescription>حدد التوقيت ونوع السؤال والإجابات</DialogDescription>
-          </DialogHeader>
             <DialogDescription>اتبع الخطوات بالترتيب: التوقيت، نص السؤال، الخيارات، ثم الإعدادات</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
