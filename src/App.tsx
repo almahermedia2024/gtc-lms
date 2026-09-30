@@ -22,6 +22,7 @@ import StudentQuiz from "./pages/student/StudentQuiz";
 import StudentLectureQuiz from "./pages/student/StudentLectureQuiz";
 import AdminPractical from "./pages/admin/AdminPractical";
 import AdminPracticalCheckpoints from "./pages/admin/AdminPracticalCheckpoints";
+import AdminDataReset from "./pages/admin/AdminDataReset";
 import StudentPractical from "./pages/student/StudentPractical";
 import StudentPracticalPlayer from "./pages/student/StudentPracticalPlayer";
 import NotFound from "./pages/NotFound";
@@ -63,6 +64,7 @@ const App = () => (
               <Route path="practical" element={<AdminPractical />} />
               <Route path="practical/:videoId" element={<AdminPracticalCheckpoints />} />
               <Route path="account" element={<AdminAccount />} />
+              <Route path="data-reset" element={<AdminDataReset />} />
             </Route>
             <Route path="/student" element={<RequireAuth role="student"><StudentLayout /></RequireAuth>}>
               <Route index element={<StudentLectures />} />
