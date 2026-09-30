@@ -1,4 +1,4 @@
-import { LayoutDashboard, Video, Users, BarChart3, LogOut, BookOpen, ShieldCheck, ClipboardList, PieChart, FileDown, Youtube } from "lucide-react";
+import { LayoutDashboard, Video, Users, BarChart3, LogOut, BookOpen, ShieldCheck, ClipboardList, PieChart, FileDown, Youtube, Trash2 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -26,6 +26,7 @@ const items = [
   { title: "ملخص الاختبارات", url: "/admin/quiz-summary", icon: PieChart },
   { title: "التقارير", url: "/admin/reports", icon: BarChart3 },
   { title: "حساب المسؤول", url: "/admin/account", icon: ShieldCheck },
+  { title: "مسح البيانات", url: "/admin/data-reset", icon: Trash2 },
 ];
 
 export function AdminSidebar() {
