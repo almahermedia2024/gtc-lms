@@ -187,17 +187,18 @@ export default function AdminPractical() {
                 <SelectContent>{courses.map(c => <SelectItem key={c.id} value={c.id}>{c.title}</SelectItem>)}</SelectContent>
               </Select>
             </div>
-            <div>
+            <div className="space-y-1.5">
               <Label>عنوان الفيديو</Label>
-              <Input value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} />
+              <Input value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="اكتب عنوانًا واضحًا يظهر للطالب…" />
             </div>
-            <div>
+            <div className="space-y-1.5">
               <Label>رابط يوتيوب</Label>
               <Input value={form.youtube_url} onChange={e => setForm({ ...form, youtube_url: e.target.value })} placeholder="https://www.youtube.com/watch?v=..." dir="ltr" />
+              <p className="text-xs text-muted-foreground">الصق رابط الفيديو من يوتيوب كما هو.</p>
             </div>
-            <div>
+            <div className="space-y-1.5">
               <Label>وصف (اختياري)</Label>
-              <Textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} rows={3} />
+              <Textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} rows={3} placeholder="اكتب وصفًا مختصرًا يوضح هدف هذا التدريب…" />
             </div>
             <Button onClick={handleSave} className="w-full" disabled={saving}>
               {saving ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : <Plus className="w-4 h-4 ml-2" />}
