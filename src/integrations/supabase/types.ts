@@ -364,11 +364,15 @@ export type Database = {
       }
       practical_videos: {
         Row: {
+          annotations: Json
+          case_text: string | null
+          content_type: string
           course_id: string
           created_at: string
           created_by: string | null
           description: string | null
           id: string
+          image_url: string | null
           is_locked: boolean
           order_index: number
           title: string
@@ -376,23 +380,31 @@ export type Database = {
           youtube_url: string
         }
         Insert: {
+          annotations?: Json
+          case_text?: string | null
+          content_type?: string
           course_id: string
           created_at?: string
           created_by?: string | null
           description?: string | null
           id?: string
+          image_url?: string | null
           is_locked?: boolean
           order_index?: number
           title: string
           updated_at?: string
-          youtube_url: string
+          youtube_url?: string
         }
         Update: {
+          annotations?: Json
+          case_text?: string | null
+          content_type?: string
           course_id?: string
           created_at?: string
           created_by?: string | null
           description?: string | null
           id?: string
+          image_url?: string | null
           is_locked?: boolean
           order_index?: number
           title?: string
