@@ -10,14 +10,20 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, Loader2, Pencil, Lock, Unlock, ListChecks, Youtube } from "lucide-react";
+import { Plus, Trash2, Loader2, Pencil, Lock, Unlock, ListChecks, Youtube, FileText, ImageIcon } from "lucide-react";
 import { Link } from "react-router-dom";
 import { extractYouTubeId } from "@/components/practical/YouTubePlayer";
+import { ContentType, PRACTICAL_BUCKET } from "@/components/practical/PracticalContent";
+
+const typeName: Record<ContentType, string> = { video: "فيديو تعليمي", case: "حالة (كيس)", image: "صورة مع تعليقات" };
+const typeIcon: Record<ContentType, typeof Youtube> = { video: Youtube, case: FileText, image: ImageIcon };
+const emptyForm = { course_id: "", title: "", youtube_url: "", description: "", content_type: "video" as ContentType, case_text: "", image_url: "" };
 
 interface Course { id: string; title: string; }
 interface PracticalVideo {
   id: string; course_id: string; title: string; youtube_url: string;
   description: string | null; order_index: number; is_locked: boolean;
+  content_type: ContentType; case_text: string | null; image_url: string | null;
 }
 
 export default function AdminPractical() {
@@ -29,7 +35,8 @@ export default function AdminPractical() {
   const [selectedCourse, setSelectedCourse] = useState<string>("all");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<PracticalVideo | null>(null);
-  const [form, setForm] = useState({ course_id: "", title: "", youtube_url: "", description: "" });
+  const [form, setForm] = useState(emptyForm);
+  const [imageFile, setImageFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
   const [counts, setCounts] = useState<Record<string, number>>({});
 
@@ -57,39 +64,65 @@ export default function AdminPractical() {
 
   const openAdd = () => {
     setEditing(null);
-    setForm({ course_id: selectedCourse !== "all" ? selectedCourse : (courses[0]?.id || ""), title: "", youtube_url: "", description: "" });
+    setImageFile(null);
+    setForm({ ...emptyForm, course_id: selectedCourse !== "all" ? selectedCourse : (courses[0]?.id || "") });
     setDialogOpen(true);
   };
 
   const openEdit = (v: PracticalVideo) => {
     setEditing(v);
-    setForm({ course_id: v.course_id, title: v.title, youtube_url: v.youtube_url, description: v.description || "" });
+    setImageFile(null);
+    setForm({
+      course_id: v.course_id, title: v.title, youtube_url: v.youtube_url || "", description: v.description || "",
+      content_type: v.content_type || "video", case_text: v.case_text || "", image_url: v.image_url || "",
+    });
     setDialogOpen(true);
   };
 
   const handleSave = async () => {
-    if (!form.course_id || !form.title.trim() || !form.youtube_url.trim()) {
+    if (!form.course_id || !form.title.trim()) {
       toast({ title: "خطأ", description: "يرجى تعبئة جميع الحقول الأساسية", variant: "destructive" });
       return;
     }
-    if (!extractYouTubeId(form.youtube_url.trim())) {
+    if (form.content_type === "video" && !extractYouTubeId(form.youtube_url.trim())) {
       toast({ title: "رابط غير صالح", description: "تأكد من إدخال رابط يوتيوب صحيح", variant: "destructive" });
       return;
     }
+    if (form.content_type === "case" && !form.case_text.trim()) {
+      toast({ title: "خطأ", description: "اكتب نص الحالة", variant: "destructive" });
+      return;
+    }
+    if (form.content_type === "image" && !imageFile && !form.image_url) {
+      toast({ title: "خطأ", description: "اختر صورة", variant: "destructive" });
+      return;
+    }
     setSaving(true);
+    let imagePath = form.image_url;
+    if (form.content_type === "image" && imageFile) {
+      const ext = imageFile.name.split(".").pop() || "jpg";
+      const path = `${crypto.randomUUID()}.${ext}`;
+      const { error: upErr } = await supabase.storage.from(PRACTICAL_BUCKET).upload(path, imageFile, { contentType: imageFile.type });
+      if (upErr) {
+        toast({ title: "فشل رفع الصورة", description: upErr.message, variant: "destructive" });
+        setSaving(false);
+        return;
+      }
+      imagePath = path;
+    }
+    const payload = {
+      course_id: form.course_id, title: form.title.trim(),
+      description: form.description.trim() || null,
+      content_type: form.content_type,
+      youtube_url: form.content_type === "video" ? form.youtube_url.trim() : "",
+      case_text: form.content_type === "case" ? form.case_text.trim() : null,
+      image_url: form.content_type === "image" ? imagePath : null,
+    };
     if (editing) {
-      const { error } = await (supabase as any).from("practical_videos").update({
-        course_id: form.course_id, title: form.title.trim(),
-        youtube_url: form.youtube_url.trim(), description: form.description.trim() || null,
-      }).eq("id", editing.id);
+      const { error } = await (supabase as any).from("practical_videos").update(payload).eq("id", editing.id);
       if (error) toast({ title: "خطأ", description: error.message, variant: "destructive" });
       else toast({ title: "تم التحديث" });
     } else {
-      const { error } = await (supabase as any).from("practical_videos").insert({
-        course_id: form.course_id, title: form.title.trim(),
-        youtube_url: form.youtube_url.trim(), description: form.description.trim() || null,
-        created_by: user?.id,
-      });
+      const { error } = await (supabase as any).from("practical_videos").insert({ ...payload, created_by: user?.id });
       if (error) toast({ title: "خطأ", description: error.message, variant: "destructive" });
       else toast({ title: "تمت الإضافة" });
     }
@@ -151,15 +184,18 @@ export default function AdminPractical() {
                   <div className="flex items-center gap-2 flex-wrap">
                     <h3 className="font-heading font-bold">{v.title}</h3>
                     <Badge variant="secondary">{courseMap.get(v.course_id) || "—"}</Badge>
-                    <Badge variant="outline" className="text-xs">{counts[v.id] || 0} نقطة توقف</Badge>
+                    <Badge variant="outline" className="text-xs">{typeName[v.content_type || "video"]}</Badge>
+                    <Badge variant="outline" className="text-xs">{counts[v.id] || 0} سؤال</Badge>
                     {v.is_locked && <Badge variant="destructive" className="text-xs">مقفل</Badge>}
                   </div>
                   {v.description && <p className="text-sm text-muted-foreground mt-1">{v.description}</p>}
-                  <a href={v.youtube_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline mt-1 inline-block" dir="ltr">{v.youtube_url}</a>
+                  {(v.content_type || "video") === "video" && (
+                    <a href={v.youtube_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline mt-1 inline-block" dir="ltr">{v.youtube_url}</a>
+                  )}
                 </div>
                 <div className="flex items-center gap-1">
                   <Button asChild size="sm" variant="default">
-                    <Link to={`/admin/practical/${v.id}`}><ListChecks className="w-4 h-4 ml-1" />نقاط التوقف</Link>
+                    <Link to={`/admin/practical/${v.id}`}><ListChecks className="w-4 h-4 ml-1" />{(v.content_type || "video") === "video" ? "نقاط التوقف" : "الأسئلة والتعليقات"}</Link>
                   </Button>
                   <Button size="icon" variant="ghost" onClick={() => toggleLock(v)} className={v.is_locked ? "text-destructive" : ""}>
                     {v.is_locked ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
@@ -192,10 +228,41 @@ export default function AdminPractical() {
               <Input value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="اكتب عنوانًا واضحًا يظهر للطالب…" />
             </div>
             <div className="space-y-1.5">
-              <Label>رابط يوتيوب</Label>
-              <Input value={form.youtube_url} onChange={e => setForm({ ...form, youtube_url: e.target.value })} placeholder="https://www.youtube.com/watch?v=..." dir="ltr" />
-              <p className="text-xs text-muted-foreground">الصق رابط الفيديو من يوتيوب كما هو.</p>
+              <Label>نوع المحتوى التدريبي</Label>
+              <div className="grid grid-cols-3 gap-2">
+                {(["video", "case", "image"] as ContentType[]).map(t => {
+                  const Icon = typeIcon[t];
+                  return (
+                    <button key={t} type="button" onClick={() => setForm({ ...form, content_type: t })}
+                      className={`p-3 rounded-md border text-sm flex flex-col items-center gap-1 transition ${form.content_type === t ? "border-primary bg-primary/10 text-primary" : "border-border/50 hover:bg-accent/40"}`}>
+                      <Icon className="w-5 h-5" />{typeName[t]}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
+            {form.content_type === "video" && (
+              <div className="space-y-1.5">
+                <Label>رابط يوتيوب</Label>
+                <Input value={form.youtube_url} onChange={e => setForm({ ...form, youtube_url: e.target.value })} placeholder="https://www.youtube.com/watch?v=..." dir="ltr" />
+                <p className="text-xs text-muted-foreground">الصق رابط الفيديو من يوتيوب كما هو.</p>
+              </div>
+            )}
+            {form.content_type === "case" && (
+              <div className="space-y-1.5">
+                <Label>نص الحالة (الكيس)</Label>
+                <Textarea value={form.case_text} onChange={e => setForm({ ...form, case_text: e.target.value })} rows={8} placeholder="اكتب تفاصيل الحالة التي سيقرأها المتدرب ثم يجيب على الأسئلة…" />
+                <p className="text-xs text-muted-foreground">الأسئلة تُضاف بعد الحفظ من زر "الأسئلة".</p>
+              </div>
+            )}
+            {form.content_type === "image" && (
+              <div className="space-y-1.5">
+                <Label>الصورة</Label>
+                <Input type="file" accept="image/*" onChange={e => setImageFile(e.target.files?.[0] || null)} />
+                {form.image_url && !imageFile && <p className="text-xs text-muted-foreground">توجد صورة حالية — اختر ملفًا جديدًا لاستبدالها.</p>}
+                <p className="text-xs text-muted-foreground">الحد الأقصى 10MB. التعليقات على الصورة تُضاف من صفحة "الأسئلة".</p>
+              </div>
+            )}
             <div className="space-y-1.5">
               <Label>وصف (اختياري)</Label>
               <Textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} rows={3} placeholder="اكتب وصفًا مختصرًا يوضح هدف هذا التدريب…" />
