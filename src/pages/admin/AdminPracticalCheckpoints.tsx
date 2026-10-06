@@ -13,8 +13,12 @@ import { useToast } from "@/hooks/use-toast";
 import { Plus, Trash2, Loader2, Pencil, ArrowRight, Clock, ArrowUp, ArrowDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { QuestionType, OptionItem } from "@/components/practical/QuestionRenderer";
+import { AnnotatedImage, CaseText, type Annotation, type ContentType } from "@/components/practical/PracticalContent";
 
-interface Video { id: string; title: string; youtube_url: string; }
+interface Video {
+  id: string; title: string; youtube_url: string;
+  content_type: ContentType; case_text: string | null; image_url: string | null; annotations: Annotation[];
+}
 interface Checkpoint {
   id: string; video_id: string; stop_time: number; order_index: number;
   question_type: QuestionType; question_text: string;
@@ -66,7 +70,7 @@ export default function AdminPracticalCheckpoints() {
     if (!videoId) return;
     setLoading(true);
     const [{ data: v }, { data: cps }] = await Promise.all([
-      (supabase as any).from("practical_videos").select("id, title, youtube_url").eq("id", videoId).maybeSingle(),
+      (supabase as any).from("practical_videos").select("id, title, youtube_url, content_type, case_text, image_url, annotations").eq("id", videoId).maybeSingle(),
       (supabase as any).from("practical_checkpoints").select("*").eq("video_id", videoId).order("stop_time").order("order_index"),
     ]);
     setVideo(v);
@@ -76,9 +80,20 @@ export default function AdminPracticalCheckpoints() {
 
   useEffect(() => { fetchAll(); }, [videoId]);
 
+  const isVideo = (video?.content_type || "video") === "video";
+
+  const saveAnnotations = async (annotations: Annotation[]) => {
+    if (!video) return;
+    const { error } = await (supabase as any).from("practical_videos").update({ annotations }).eq("id", video.id);
+    if (error) toast({ title: "خطأ", description: error.message, variant: "destructive" });
+    else setVideo({ ...video, annotations });
+  };
+
   const openAdd = () => {
     setEditing(null);
-    setForm(emptyForm());
+    const f = emptyForm();
+    if (!isVideo) f.stop_time = items.length + 1;
+    setForm(f);
     setDialogOpen(true);
   };
 
@@ -193,10 +208,26 @@ export default function AdminPracticalCheckpoints() {
           <Link to="/admin/practical" className="text-sm text-muted-foreground hover:text-primary inline-flex items-center gap-1">
             <ArrowRight className="w-3 h-3" />العودة للفيديوهات
           </Link>
-          <h1 className="text-2xl font-heading font-bold mt-1">نقاط التوقف — {video?.title || "..."}</h1>
+          <h1 className="text-2xl font-heading font-bold mt-1">{isVideo ? "نقاط التوقف" : "الأسئلة"} — {video?.title || "..."}</h1>
         </div>
-        <Button onClick={openAdd}><Plus className="w-4 h-4 ml-2" />إضافة نقطة توقف</Button>
+        <Button onClick={openAdd}><Plus className="w-4 h-4 ml-2" />{isVideo ? "إضافة نقطة توقف" : "إضافة سؤال"}</Button>
       </div>
+
+      {video?.content_type === "case" && video.case_text && (
+        <div className="mb-6"><CaseText text={video.case_text} /></div>
+      )}
+      {video?.content_type === "image" && (
+        <Card className="mb-6 border-border/50">
+          <CardContent className="p-4">
+            <h3 className="font-heading font-bold mb-3 text-sm">الصورة والتعليقات</h3>
+            <div className="max-w-3xl">
+              <AnnotatedImage path={video.image_url} annotations={video.annotations || []} editable
+                onAdd={(a) => saveAnnotations([...(video.annotations || []), a])}
+                onRemove={(id) => saveAnnotations((video.annotations || []).filter(x => x.id !== id))} />
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {loading ? (
         <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
@@ -209,15 +240,15 @@ export default function AdminPracticalCheckpoints() {
               <CardContent className="p-4 flex items-start gap-4 flex-wrap">
                 <div className="flex-1 min-w-[240px]">
                   <div className="flex items-center gap-2 flex-wrap mb-1">
-                    <Badge variant="secondary" className="font-mono"><Clock className="w-3 h-3 ml-1" />{fmt(c.stop_time)}</Badge>
+                    <Badge variant="secondary" className="font-mono">{isVideo ? <><Clock className="w-3 h-3 ml-1" />{fmt(c.stop_time)}</> : `سؤال ${c.stop_time}`}</Badge>
                     <Badge variant="outline">{typeLabel[c.question_type]}</Badge>
                     <Badge>{c.score} درجة</Badge>
                     <Badge variant="outline" className="text-xs">{c.attempts_allowed} محاولات</Badge>
                   </div>
                   <p className="font-medium">{c.question_text}</p>
-                  <p className="text-xs text-muted-foreground mt-1">
+                  {isVideo && <p className="text-xs text-muted-foreground mt-1">
                     عند الخطأ يعود إلى {fmt(c.replay_from)} • عند الصحة يستكمل من {fmt(c.continue_from ?? c.stop_time)}
-                  </p>
+                  </p>}
                 </div>
                 <div className="flex items-center gap-1">
                   <Button size="icon" variant="ghost" onClick={() => openEdit(c)}><Pencil className="w-4 h-4" /></Button>
@@ -236,15 +267,15 @@ export default function AdminPracticalCheckpoints() {
             <DialogDescription>اتبع الخطوات بالترتيب: التوقيت، نص السؤال، الخيارات، ثم الإعدادات</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <Section index="١" title="التوقيت ونوع السؤال">
+            <Section index="١" title={isVideo ? "التوقيت ونوع السؤال" : "ترتيب السؤال ونوعه"}>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <Label>وقت التوقف (بالثواني)</Label>
+                  <Label>{isVideo ? "وقت التوقف (بالثواني)" : "رقم السؤال"}</Label>
                   <div className="flex items-center gap-2">
                     <Input type="number" min={0} value={form.stop_time} onChange={e => setForm({ ...form, stop_time: Number(e.target.value) })} />
-                    <Badge variant="outline" className="font-mono shrink-0 gap-1"><Clock className="w-3 h-3" />{fmt(Number(form.stop_time) || 0)}</Badge>
+                    {isVideo && <Badge variant="outline" className="font-mono shrink-0 gap-1"><Clock className="w-3 h-3" />{fmt(Number(form.stop_time) || 0)}</Badge>}
                   </div>
-                  <p className="text-xs text-muted-foreground">مثال: 90 تعني دقيقة ونصف — سيتوقف الفيديو ويظهر السؤال.</p>
+                  <p className="text-xs text-muted-foreground">{isVideo ? "مثال: 90 تعني دقيقة ونصف — سيتوقف الفيديو ويظهر السؤال." : "تظهر الأسئلة للمتدرب مرتبة حسب هذا الرقم."}</p>
                 </div>
                 <div className="space-y-1.5">
                   <Label>نوع السؤال</Label>
@@ -342,7 +373,7 @@ export default function AdminPracticalCheckpoints() {
             </Section>
 
             <Section index="٥" title="التكرار والدرجات">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {isVideo && <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label>إعادة المشهد من (بالثواني)</Label>
                   <div className="flex items-center gap-2">
@@ -356,7 +387,7 @@ export default function AdminPracticalCheckpoints() {
                   <Input type="number" min={0} placeholder="افتراضي: من وقت التوقف" value={form.continue_from} onChange={e => setForm({ ...form, continue_from: e.target.value })} />
                   <p className="text-xs text-muted-foreground">اتركه فارغًا ليستكمل الفيديو من وقت التوقف.</p>
                 </div>
-              </div>
+              </div>}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label>الدرجة</Label>
