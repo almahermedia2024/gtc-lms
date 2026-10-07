@@ -25,10 +25,11 @@ interface Checkpoint {
   options: OptionItem[]; correct_answer: unknown;
   correct_feedback: string | null; wrong_feedback: string | null;
   replay_from: number; continue_from: number | null;
-  score: number; attempts_allowed: number;
+  score: number; attempts_allowed: number; trigger_type?: "video" | "timer";
 }
 
 const emptyForm = () => ({
+  trigger_type: "video" as "video" | "timer",
   stop_time: 0, question_type: "multiple_choice" as QuestionType, question_text: "",
   options: [{ id: crypto.randomUUID(), text: "" }, { id: crypto.randomUUID(), text: "" }] as OptionItem[],
   correctSingle: "" as string, correctMulti: [] as string[], correctTF: "true" as "true" | "false",
@@ -80,7 +81,8 @@ export default function AdminPracticalCheckpoints() {
 
   useEffect(() => { fetchAll(); }, [videoId]);
 
-  const isVideo = (video?.content_type || "video") === "video";
+  const hasVideo = !!video?.youtube_url;
+  const isVideo = form.trigger_type === "video";
 
   const saveAnnotations = async (annotations: Annotation[]) => {
     if (!video) return;
@@ -92,7 +94,7 @@ export default function AdminPracticalCheckpoints() {
   const openAdd = () => {
     setEditing(null);
     const f = emptyForm();
-    if (!isVideo) f.stop_time = items.length + 1;
+    if (!hasVideo) { f.trigger_type = "timer"; f.stop_time = 30; }
     setForm(f);
     setDialogOpen(true);
   };
@@ -102,6 +104,7 @@ export default function AdminPracticalCheckpoints() {
     const opts = (c.options as OptionItem[]) || [];
     const f = emptyForm();
     f.stop_time = c.stop_time;
+    f.trigger_type = c.trigger_type || "video";
     f.question_type = c.question_type;
     f.question_text = c.question_text;
     f.options = opts.length ? opts : f.options;
@@ -165,6 +168,7 @@ export default function AdminPracticalCheckpoints() {
     const payload = {
       video_id: videoId,
       stop_time: Number(form.stop_time) || 0,
+      trigger_type: form.trigger_type,
       question_type: form.question_type,
       question_text: form.question_text.trim(),
       options,
@@ -206,17 +210,17 @@ export default function AdminPracticalCheckpoints() {
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
           <Link to="/admin/practical" className="text-sm text-muted-foreground hover:text-primary inline-flex items-center gap-1">
-            <ArrowRight className="w-3 h-3" />العودة للفيديوهات
+            <ArrowRight className="w-3 h-3" />العودة للتدريبات
           </Link>
-          <h1 className="text-2xl font-heading font-bold mt-1">{isVideo ? "نقاط التوقف" : "الأسئلة"} — {video?.title || "..."}</h1>
+          <h1 className="text-2xl font-heading font-bold mt-1">الأسئلة ونقاط التوقف — {video?.title || "..."}</h1>
         </div>
-        <Button onClick={openAdd}><Plus className="w-4 h-4 ml-2" />{isVideo ? "إضافة نقطة توقف" : "إضافة سؤال"}</Button>
+        <Button onClick={openAdd}><Plus className="w-4 h-4 ml-2" />إضافة سؤال</Button>
       </div>
 
-      {video?.content_type === "case" && video.case_text && (
+      {video?.case_text && (
         <div className="mb-6"><CaseText text={video.case_text} /></div>
       )}
-      {video?.content_type === "image" && (
+      {video?.image_url && (
         <Card className="mb-6 border-border/50">
           <CardContent className="p-4">
             <h3 className="font-heading font-bold mb-3 text-sm">الصورة والتعليقات</h3>
@@ -240,13 +244,13 @@ export default function AdminPracticalCheckpoints() {
               <CardContent className="p-4 flex items-start gap-4 flex-wrap">
                 <div className="flex-1 min-w-[240px]">
                   <div className="flex items-center gap-2 flex-wrap mb-1">
-                    <Badge variant="secondary" className="font-mono">{isVideo ? <><Clock className="w-3 h-3 ml-1" />{fmt(c.stop_time)}</> : `سؤال ${c.stop_time}`}</Badge>
+                    <Badge variant="secondary" className="font-mono">{(c.trigger_type || "video") === "video" ? <><Clock className="w-3 h-3 ml-1" />فيديو {fmt(c.stop_time)}</> : `نافذة منبثقة بعد ${fmt(c.stop_time)}`}</Badge>
                     <Badge variant="outline">{typeLabel[c.question_type]}</Badge>
                     <Badge>{c.score} درجة</Badge>
                     <Badge variant="outline" className="text-xs">{c.attempts_allowed} محاولات</Badge>
                   </div>
                   <p className="font-medium">{c.question_text}</p>
-                  {isVideo && <p className="text-xs text-muted-foreground mt-1">
+                  {(c.trigger_type || "video") === "video" && <p className="text-xs text-muted-foreground mt-1">
                     عند الخطأ يعود إلى {fmt(c.replay_from)} • عند الصحة يستكمل من {fmt(c.continue_from ?? c.stop_time)}
                   </p>}
                 </div>
@@ -267,15 +271,27 @@ export default function AdminPracticalCheckpoints() {
             <DialogDescription>اتبع الخطوات بالترتيب: التوقيت، نص السؤال، الخيارات، ثم الإعدادات</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <Section index="١" title={isVideo ? "التوقيت ونوع السؤال" : "ترتيب السؤال ونوعه"}>
+            <Section index="١" title="طريقة الظهور والتوقيت ونوع السؤال">
+              <div className="grid grid-cols-2 gap-2">
+                <button type="button" disabled={!hasVideo} onClick={() => setForm({ ...form, trigger_type: "video" })}
+                  className={cn("p-3 rounded-md border text-sm text-right disabled:opacity-40", isVideo ? "border-primary bg-primary/10 text-primary" : "border-border/50")}>
+                  <div className="font-bold">أثناء الفيديو</div>
+                  <div className="text-xs text-muted-foreground">يتوقف الفيديو عند توقيت محدد</div>
+                </button>
+                <button type="button" onClick={() => setForm({ ...form, trigger_type: "timer" })}
+                  className={cn("p-3 rounded-md border text-sm text-right", !isVideo ? "border-primary bg-primary/10 text-primary" : "border-border/50")}>
+                  <div className="font-bold">نافذة منبثقة بمؤقت</div>
+                  <div className="text-xs text-muted-foreground">تظهر بعد مدة من قراءة الحالة/الصورة</div>
+                </button>
+              </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <Label>{isVideo ? "وقت التوقف (بالثواني)" : "رقم السؤال"}</Label>
+                  <Label>{isVideo ? "وقت التوقف في الفيديو (بالثواني)" : "يظهر بعد (ثانية من فتح الصفحة)"}</Label>
                   <div className="flex items-center gap-2">
                     <Input type="number" min={0} value={form.stop_time} onChange={e => setForm({ ...form, stop_time: Number(e.target.value) })} />
-                    {isVideo && <Badge variant="outline" className="font-mono shrink-0 gap-1"><Clock className="w-3 h-3" />{fmt(Number(form.stop_time) || 0)}</Badge>}
+                    {<Badge variant="outline" className="font-mono shrink-0 gap-1"><Clock className="w-3 h-3" />{fmt(Number(form.stop_time) || 0)}</Badge>}
                   </div>
-                  <p className="text-xs text-muted-foreground">{isVideo ? "مثال: 90 تعني دقيقة ونصف — سيتوقف الفيديو ويظهر السؤال." : "تظهر الأسئلة للمتدرب مرتبة حسب هذا الرقم."}</p>
+                  <p className="text-xs text-muted-foreground">{isVideo ? "مثال: 90 تعني دقيقة ونصف — سيتوقف الفيديو ويظهر السؤال." : "مثال: 60 — بعد دقيقة من فتح التدريب تظهر نافذة السؤال للمتدرب."}</p>
                 </div>
                 <div className="space-y-1.5">
                   <Label>نوع السؤال</Label>

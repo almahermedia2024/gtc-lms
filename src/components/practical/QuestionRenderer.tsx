@@ -28,9 +28,10 @@ interface Props {
   feedback?: { is_correct: boolean; feedback: string; exhausted: boolean } | null;
   disabled?: boolean;
   onContinue?: () => void;
+  continueLabel?: string;
 }
 
-export function QuestionRenderer({ checkpoint, attemptsUsed, onSubmit, feedback, disabled, onContinue }: Props) {
+export function QuestionRenderer({ checkpoint, attemptsUsed, onSubmit, feedback, disabled, onContinue, continueLabel }: Props) {
   const [mcSingle, setMcSingle] = useState<string>("");
   const [mcMulti, setMcMulti] = useState<string[]>([]);
   const [tfValue, setTfValue] = useState<string>("");
@@ -163,7 +164,7 @@ export function QuestionRenderer({ checkpoint, attemptsUsed, onSubmit, feedback,
           <Button onClick={handleSubmit} disabled={!canSubmit} className="flex-1">إرسال الإجابة</Button>
         )}
         {(feedback?.is_correct || feedback?.exhausted) && onContinue && (
-          <Button onClick={onContinue} className="flex-1">متابعة الفيديو</Button>
+          <Button onClick={onContinue} className="flex-1">{continueLabel || "متابعة الفيديو"}</Button>
         )}
       </div>
     </div>
