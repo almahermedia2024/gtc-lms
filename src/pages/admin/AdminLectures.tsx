@@ -9,7 +9,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, Users, ClipboardList, Lock, Unlock } from "lucide-react";
+import { Plus, Trash2, Users, ClipboardList, Lock, Unlock, CalendarClock } from "lucide-react";
+import { Dialog as SDialog, DialogContent as SDialogContent, DialogHeader as SDialogHeader, DialogTitle as SDialogTitle, DialogDescription as SDialogDescription } from "@/components/ui/dialog";
 import { AssignStudentsDialog } from "@/components/AssignStudentsDialog";
 import { LectureQuizManager } from "@/components/LectureQuizManager";
 
@@ -21,6 +22,7 @@ interface Lecture {
   duration_minutes: number | null;
   pdf_url: string | null;
   is_locked: boolean;
+  available_from: string | null;
   created_at: string;
 }
 
@@ -31,7 +33,7 @@ export default function AdminLectures() {
   const [open, setOpen] = useState(false);
   const [assignLecture, setAssignLecture] = useState<string | null>(null);
   const [quizLecture, setQuizLecture] = useState<Lecture | null>(null);
-  const [form, setForm] = useState({ title: "", description: "", video_url: "", duration_minutes: "", pdf_url: "" });
+  const [form, setForm] = useState({ title: "", description: "", video_url: "", duration_minutes: "", pdf_url: "", available_from: "" });
 
   const fetchLectures = async () => {
     const { data } = await supabase.from("lectures").select("*").order("created_at", { ascending: false });
@@ -55,12 +57,13 @@ export default function AdminLectures() {
       video_url: form.video_url,
       duration_minutes: form.duration_minutes ? parseInt(form.duration_minutes) : 0,
       pdf_url: form.pdf_url.trim() || null,
+      available_from: form.available_from ? new Date(form.available_from).toISOString() : null,
       created_by: user?.id,
     });
     if (error) {
       toast({ title: "خطأ", description: error.message, variant: "destructive" });
     } else {
-      setForm({ title: "", description: "", video_url: "", duration_minutes: "", pdf_url: "" });
+      setForm({ title: "", description: "", video_url: "", duration_minutes: "", pdf_url: "", available_from: "" });
       setOpen(false);
       fetchLectures();
       toast({ title: "تمت الإضافة" });
@@ -71,6 +74,25 @@ export default function AdminLectures() {
   const handleDelete = async (id: string) => {
     await supabase.from("lectures").delete().eq("id", id);
     fetchLectures();
+  };
+
+  const [schedLecture, setSchedLecture] = useState<Lecture | null>(null);
+  const [schedValue, setSchedValue] = useState("");
+  const toLocalInput = (iso: string | null) => {
+    if (!iso) return "";
+    const d = new Date(iso);
+    return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+  };
+  const saveSchedule = async (value: string | null) => {
+    if (!schedLecture) return;
+    const available_from = value ? new Date(value).toISOString() : null;
+    const { error } = await supabase.from("lectures").update({ available_from }).eq("id", schedLecture.id);
+    if (error) toast({ title: "خطأ", description: error.message, variant: "destructive" });
+    else {
+      toast({ title: available_from ? "تم تحديد موعد الإتاحة" : "تم إلغاء الموعد — المحاضرة متاحة الآن" });
+      setLectures(prev => prev.map(x => x.id === schedLecture.id ? { ...x, available_from } : x));
+      setSchedLecture(null);
+    }
   };
 
   const handleToggleLock = async (l: Lecture) => {
@@ -101,6 +123,7 @@ export default function AdminLectures() {
               <div><Label>الوصف</Label><Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></div>
               <div><Label>رابط الفيديو</Label><Input value={form.video_url} onChange={(e) => setForm({ ...form, video_url: e.target.value })} dir="ltr" /></div>
               <div><Label>المدة (بالدقائق)</Label><Input type="number" value={form.duration_minutes} onChange={(e) => setForm({ ...form, duration_minutes: e.target.value })} /></div>
+              <div><Label>موعد الإتاحة للمتدربين (اختياري)</Label><Input type="datetime-local" value={form.available_from} onChange={(e) => setForm({ ...form, available_from: e.target.value })} dir="ltr" /><p className="text-xs text-muted-foreground mt-1">اتركه فارغًا لتكون المحاضرة متاحة فورًا.</p></div>
               <div><Label>رابط ملف PDF (Google Drive) - اختياري</Label><Input value={form.pdf_url} onChange={(e) => setForm({ ...form, pdf_url: e.target.value })} dir="ltr" placeholder="https://drive.google.com/..." /></div>
               <Button onClick={handleAdd} className="w-full">إضافة</Button>
             </div>
@@ -127,6 +150,9 @@ export default function AdminLectures() {
                       {l.is_locked && <Lock className="w-4 h-4 text-destructive" />}
                       <span>{l.title}</span>
                     </div>
+                    {l.available_from && new Date(l.available_from) > new Date() && (
+                      <div className="text-xs text-accent-foreground/80 mt-1 flex items-center gap-1"><CalendarClock className="w-3 h-3" />تُتاح في {new Date(l.available_from).toLocaleString("ar")}</div>
+                    )}
                   </TableCell>
                   <TableCell>{l.duration_minutes || 0} د</TableCell>
                   <TableCell>{new Date(l.created_at).toLocaleDateString("ar")}</TableCell>
@@ -137,6 +163,9 @@ export default function AdminLectures() {
                       </Button>
                       <Button size="sm" variant="outline" onClick={() => setQuizLecture(l)}>
                         <ClipboardList className="w-4 h-4 ml-1" />الكويز
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => { setSchedLecture(l); setSchedValue(toLocalInput(l.available_from)); }}>
+                        <CalendarClock className="w-4 h-4 ml-1" />موعد الإتاحة
                       </Button>
                       <Button
                         size="sm"
@@ -163,6 +192,22 @@ export default function AdminLectures() {
           </Table>
         </CardContent>
       </Card>
+
+      <SDialog open={!!schedLecture} onOpenChange={(o) => !o && setSchedLecture(null)}>
+        <SDialogContent dir="rtl">
+          <SDialogHeader>
+            <SDialogTitle>موعد إتاحة المحاضرة</SDialogTitle>
+            <SDialogDescription>{schedLecture?.title} — لن يتمكن المتدربون من فتحها قبل هذا الموعد.</SDialogDescription>
+          </SDialogHeader>
+          <div className="space-y-3">
+            <Input type="datetime-local" value={schedValue} onChange={(e) => setSchedValue(e.target.value)} dir="ltr" />
+            <div className="flex gap-2">
+              <Button className="flex-1" disabled={!schedValue} onClick={() => saveSchedule(schedValue)}>حفظ الموعد</Button>
+              <Button variant="outline" onClick={() => saveSchedule(null)}>إلغاء الموعد</Button>
+            </div>
+          </div>
+        </SDialogContent>
+      </SDialog>
 
       {assignLecture && (
         <AssignStudentsDialog lectureId={assignLecture} onClose={() => { setAssignLecture(null); }} />

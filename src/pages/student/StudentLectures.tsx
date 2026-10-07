@@ -17,6 +17,7 @@ interface LectureWithProgress {
   duration_minutes: number | null;
   pdf_url: string | null;
   is_locked: boolean;
+  available_from: string | null;
   course_id: string | null;
   course_title: string | null;
   watched_seconds: number;
@@ -31,6 +32,8 @@ interface CourseResource {
   title: string;
   url: string;
 }
+
+const isScheduled = (l: { available_from: string | null }) => !!l.available_from && new Date(l.available_from).getTime() > Date.now();
 
 export default function StudentLectures() {
   const { user } = useAuth();
@@ -108,6 +111,10 @@ export default function StudentLectures() {
   }, [user]);
 
   const handleOpenLecture = async (lecture: LectureWithProgress) => {
+    if (isScheduled(lecture)) {
+      toast({ title: "المحاضرة غير متاحة بعد", description: `ستُتاح في ${new Date(lecture.available_from!).toLocaleString("ar")}`, variant: "destructive" });
+      return;
+    }
     if (lecture.is_locked) {
       toast({ title: "محاضرة مقفلة", description: "هذه المحاضرة مقفلة من قبل الإدارة", variant: "destructive" });
       return;
@@ -345,18 +352,21 @@ export default function StudentLectures() {
                 {group.lectures.map((l) => (
                   <Card
                     key={l.id}
-                    className={`lecture-card-animated border-border/50 ${l.is_locked ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer'}`}
+                    className={`lecture-card-animated border-border/50 ${l.is_locked || isScheduled(l) ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer'}`}
                     onClick={() => handleOpenLecture(l)}
                   >
                     <CardHeader className="pb-2">
                       <CardTitle className="text-base font-heading flex items-center gap-2">
-                        {l.is_locked && <Lock className="w-4 h-4 text-destructive" />}
+                        {(l.is_locked || isScheduled(l)) && <Lock className="w-4 h-4 text-destructive" />}
                         <span>{l.title}</span>
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
                       {l.is_locked && (
                         <Badge variant="destructive" className="mb-2 text-xs">مقفلة</Badge>
+                      )}
+                      {!l.is_locked && isScheduled(l) && (
+                        <Badge variant="secondary" className="mb-2 text-xs">تُتاح في {new Date(l.available_from!).toLocaleString("ar")}</Badge>
                       )}
                       {l.description && <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{l.description}</p>}
                       <div className="flex items-center gap-4 text-xs text-muted-foreground">
