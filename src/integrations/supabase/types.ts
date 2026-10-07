@@ -192,6 +192,7 @@ export type Database = {
       }
       lectures: {
         Row: {
+          available_from: string | null
           course_id: string | null
           created_at: string
           created_by: string | null
@@ -205,6 +206,7 @@ export type Database = {
           video_url: string
         }
         Insert: {
+          available_from?: string | null
           course_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -218,6 +220,7 @@ export type Database = {
           video_url: string
         }
         Update: {
+          available_from?: string | null
           course_id?: string | null
           created_at?: string
           created_by?: string | null
