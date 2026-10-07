@@ -15,8 +15,6 @@ import { Link } from "react-router-dom";
 import { extractYouTubeId } from "@/components/practical/YouTubePlayer";
 import { ContentType, PRACTICAL_BUCKET } from "@/components/practical/PracticalContent";
 
-const typeName: Record<ContentType, string> = { video: "فيديو تعليمي", case: "حالة (كيس)", image: "صورة مع تعليقات" };
-const typeIcon: Record<ContentType, typeof Youtube> = { video: Youtube, case: FileText, image: ImageIcon };
 const emptyForm = { course_id: "", title: "", youtube_url: "", description: "", content_type: "video" as ContentType, case_text: "", image_url: "" };
 
 interface Course { id: string; title: string; }
@@ -84,21 +82,17 @@ export default function AdminPractical() {
       toast({ title: "خطأ", description: "يرجى تعبئة جميع الحقول الأساسية", variant: "destructive" });
       return;
     }
-    if (form.content_type === "video" && !extractYouTubeId(form.youtube_url.trim())) {
+    if (!form.youtube_url.trim() && !form.case_text.trim() && !imageFile && !form.image_url) {
+      toast({ title: "خطأ", description: "أضف محتوى واحدًا على الأقل: فيديو أو حالة أو صورة", variant: "destructive" });
+      return;
+    }
+    if (form.youtube_url.trim() && !extractYouTubeId(form.youtube_url.trim())) {
       toast({ title: "رابط غير صالح", description: "تأكد من إدخال رابط يوتيوب صحيح", variant: "destructive" });
-      return;
-    }
-    if (form.content_type === "case" && !form.case_text.trim()) {
-      toast({ title: "خطأ", description: "اكتب نص الحالة", variant: "destructive" });
-      return;
-    }
-    if (form.content_type === "image" && !imageFile && !form.image_url) {
-      toast({ title: "خطأ", description: "اختر صورة", variant: "destructive" });
       return;
     }
     setSaving(true);
     let imagePath = form.image_url;
-    if (form.content_type === "image" && imageFile) {
+    if (imageFile) {
       const ext = imageFile.name.split(".").pop() || "jpg";
       const path = `${crypto.randomUUID()}.${ext}`;
       const { error: upErr } = await supabase.storage.from(PRACTICAL_BUCKET).upload(path, imageFile, { contentType: imageFile.type });
@@ -112,10 +106,9 @@ export default function AdminPractical() {
     const payload = {
       course_id: form.course_id, title: form.title.trim(),
       description: form.description.trim() || null,
-      content_type: form.content_type,
-      youtube_url: form.content_type === "video" ? form.youtube_url.trim() : "",
-      case_text: form.content_type === "case" ? form.case_text.trim() : null,
-      image_url: form.content_type === "image" ? imagePath : null,
+      youtube_url: form.youtube_url.trim(),
+      case_text: form.case_text.trim() || null,
+      image_url: imagePath || null,
     };
     if (editing) {
       const { error } = await (supabase as any).from("practical_videos").update(payload).eq("id", editing.id);
@@ -163,7 +156,7 @@ export default function AdminPractical() {
             </SelectContent>
           </Select>
           <Button onClick={openAdd} disabled={courses.length === 0}>
-            <Plus className="w-4 h-4 ml-2" />إضافة فيديو تدريبي
+            <Plus className="w-4 h-4 ml-2" />إضافة تدريب عملي
           </Button>
         </div>
       </div>
@@ -173,7 +166,7 @@ export default function AdminPractical() {
       ) : filtered.length === 0 ? (
         <div className="text-center text-muted-foreground py-16">
           <Youtube className="w-12 h-12 mx-auto mb-4 opacity-30" />
-          <p>لا توجد فيديوهات بعد. اضغط "إضافة فيديو تدريبي" للبدء.</p>
+          <p>لا توجد فيديوهات بعد. اضغط "إضافة تدريب عملي" للبدء.</p>
         </div>
       ) : (
         <div className="grid gap-3">
@@ -184,18 +177,20 @@ export default function AdminPractical() {
                   <div className="flex items-center gap-2 flex-wrap">
                     <h3 className="font-heading font-bold">{v.title}</h3>
                     <Badge variant="secondary">{courseMap.get(v.course_id) || "—"}</Badge>
-                    <Badge variant="outline" className="text-xs">{typeName[v.content_type || "video"]}</Badge>
+                    {v.youtube_url && <Badge variant="outline" className="text-xs">فيديو</Badge>}
+                    {v.case_text && <Badge variant="outline" className="text-xs">حالة</Badge>}
+                    {v.image_url && <Badge variant="outline" className="text-xs">صورة</Badge>}
                     <Badge variant="outline" className="text-xs">{counts[v.id] || 0} سؤال</Badge>
                     {v.is_locked && <Badge variant="destructive" className="text-xs">مقفل</Badge>}
                   </div>
                   {v.description && <p className="text-sm text-muted-foreground mt-1">{v.description}</p>}
-                  {(v.content_type || "video") === "video" && (
+                  {v.youtube_url && (
                     <a href={v.youtube_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline mt-1 inline-block" dir="ltr">{v.youtube_url}</a>
                   )}
                 </div>
                 <div className="flex items-center gap-1">
                   <Button asChild size="sm" variant="default">
-                    <Link to={`/admin/practical/${v.id}`}><ListChecks className="w-4 h-4 ml-1" />{(v.content_type || "video") === "video" ? "نقاط التوقف" : "الأسئلة والتعليقات"}</Link>
+                    <Link to={`/admin/practical/${v.id}`}><ListChecks className="w-4 h-4 ml-1" />الأسئلة ونقاط التوقف</Link>
                   </Button>
                   <Button size="icon" variant="ghost" onClick={() => toggleLock(v)} className={v.is_locked ? "text-destructive" : ""}>
                     {v.is_locked ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
@@ -212,7 +207,7 @@ export default function AdminPractical() {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent dir="rtl">
           <DialogHeader>
-            <DialogTitle>{editing ? "تعديل الفيديو" : "إضافة فيديو تدريبي"}</DialogTitle>
+            <DialogTitle>{editing ? "تعديل الفيديو" : "إضافة تدريب عملي"}</DialogTitle>
             <DialogDescription>أدخل رابط يوتيوب وبيانات الفيديو</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -227,37 +222,24 @@ export default function AdminPractical() {
               <Label>عنوان الفيديو</Label>
               <Input value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="اكتب عنوانًا واضحًا يظهر للطالب…" />
             </div>
-            <div className="space-y-1.5">
-              <Label>نوع المحتوى التدريبي</Label>
-              <div className="grid grid-cols-3 gap-2">
-                {(["video", "case", "image"] as ContentType[]).map(t => {
-                  const Icon = typeIcon[t];
-                  return (
-                    <button key={t} type="button" onClick={() => setForm({ ...form, content_type: t })}
-                      className={`p-3 rounded-md border text-sm flex flex-col items-center gap-1 transition ${form.content_type === t ? "border-primary bg-primary/10 text-primary" : "border-border/50 hover:bg-accent/40"}`}>
-                      <Icon className="w-5 h-5" />{typeName[t]}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-            {form.content_type === "video" && (
+            <p className="text-xs text-muted-foreground rounded-md bg-muted/40 p-2">يمكنك الجمع بين فيديو وحالة وصورة في نفس التدريب — كلها اختيارية لكن أضف واحدًا على الأقل.</p>
+            {true && (
               <div className="space-y-1.5">
-                <Label>رابط يوتيوب</Label>
+                <Label>رابط فيديو يوتيوب (اختياري)</Label>
                 <Input value={form.youtube_url} onChange={e => setForm({ ...form, youtube_url: e.target.value })} placeholder="https://www.youtube.com/watch?v=..." dir="ltr" />
                 <p className="text-xs text-muted-foreground">الصق رابط الفيديو من يوتيوب كما هو.</p>
               </div>
             )}
-            {form.content_type === "case" && (
+            {true && (
               <div className="space-y-1.5">
-                <Label>نص الحالة (الكيس)</Label>
+                <Label>نص الحالة / الكيس (اختياري)</Label>
                 <Textarea value={form.case_text} onChange={e => setForm({ ...form, case_text: e.target.value })} rows={8} placeholder="اكتب تفاصيل الحالة التي سيقرأها المتدرب ثم يجيب على الأسئلة…" />
                 <p className="text-xs text-muted-foreground">الأسئلة تُضاف بعد الحفظ من زر "الأسئلة".</p>
               </div>
             )}
-            {form.content_type === "image" && (
+            {true && (
               <div className="space-y-1.5">
-                <Label>الصورة</Label>
+                <Label>صورة (اختياري)</Label>
                 <Input type="file" accept="image/*" onChange={e => setImageFile(e.target.files?.[0] || null)} />
                 {form.image_url && !imageFile && <p className="text-xs text-muted-foreground">توجد صورة حالية — اختر ملفًا جديدًا لاستبدالها.</p>}
                 <p className="text-xs text-muted-foreground">الحد الأقصى 10MB. التعليقات على الصورة تُضاف من صفحة "الأسئلة".</p>
