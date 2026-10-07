@@ -312,6 +312,7 @@ export type Database = {
           replay_from: number
           score: number
           stop_time: number
+          trigger_type: string
           updated_at: string
           video_id: string
           wrong_feedback: string | null
@@ -330,6 +331,7 @@ export type Database = {
           replay_from?: number
           score?: number
           stop_time: number
+          trigger_type?: string
           updated_at?: string
           video_id: string
           wrong_feedback?: string | null
@@ -348,6 +350,7 @@ export type Database = {
           replay_from?: number
           score?: number
           stop_time?: number
+          trigger_type?: string
           updated_at?: string
           video_id?: string
           wrong_feedback?: string | null
@@ -730,6 +733,21 @@ export type Database = {
           question_type: Database["public"]["Enums"]["practical_question_type"]
           score: number
           stop_time: number
+          video_id: string
+        }[]
+      }
+      get_practical_checkpoints_for_student_v2: {
+        Args: { _video_id: string }
+        Returns: {
+          attempts_allowed: number
+          id: string
+          options: Json
+          order_index: number
+          question_text: string
+          question_type: Database["public"]["Enums"]["practical_question_type"]
+          score: number
+          stop_time: number
+          trigger_type: string
           video_id: string
         }[]
       }
