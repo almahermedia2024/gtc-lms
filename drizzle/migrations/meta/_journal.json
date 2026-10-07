@@ -15,6 +15,13 @@
       "when": 1791356142206,
       "tag": "0001_practical_checkpoint_triggers",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791356532974,
+      "tag": "0002_lecture_available_from",
+      "breakpoints": true
     }
   ]
 }
